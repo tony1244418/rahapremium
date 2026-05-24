@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: white; }
+        .payment { background: #2a2a2a; padding: 15px; margin: 10px 0; border-radius: 8px; }
+        .status { padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+        .pending { background: #fbbf24; color: black; }
+        .completed { background: #10b981; color: white; }
+        .failed { background: #ef4444; color: white; }
+    </style>
+</head>
+<body>
+    <h1>Admin Panel Test - Payments from Database</h1>
+    <button onclick="loadPayments()">Load Payments</button>
+    <div id="payments"></div>
+
+    <script>
+        async function loadPayments() {
+            try {
+                const response = await fetch('http://localhost:3001/api/admin/payments');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayPayments(data.payments);
+                } else {
+                    document.getElementById('payments').innerHTML = '<p>Error loading payments</p>';
+                }
+            } catch (error) {
+                document.getElementById('payments').innerHTML = '<p>Error: ' + error.message + '</p>';
+            }
+        }
+
+        function displayPayments(payments) {
+            const container = document.getElementById('payments');
+            
+            if (payments.length === 0) {
+                container.innerHTML = '<p>No payments found</p>';
+                return;
+            }
+
+            container.innerHTML = payments.map(payment => `
+                <div class="payment">
+                    <h3>Payment ID: ${payment.id}</h3>
+                    <p><strong>User:</strong> ${payment.userName} (${payment.userPhone})</p>
+                    <p><strong>Package:</strong> ${payment.packageType}</p>
+                    <p><strong>Amount:</strong> ${payment.amount} TZS</p>
+                    <p><strong>Status:</strong> <span class="status ${payment.status}">${payment.status.toUpperCase()}</span></p>
+                    <p><strong>Order ID:</strong> ${payment.transactionId || 'N/A'}</p>
+                    <p><strong>Created:</strong> ${new Date(payment.createdAt).toLocaleString()}</p>
+                </div>
+            `).join('');
+        }
+
+        // Load payments on page load
+        loadPayments();
+    </script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unlimited TV Pro - Live</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/shaka-player.compiled.js"></script>
+
+    <style>
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; }
+        .video-box { width: 100%; max-width: 800px; border: 2px solid #00ff00; border-radius: 10px; overflow: hidden; }
+        video { width: 100%; display: block; }
+        .btn { margin-top: 20px; padding: 10px 20px; background: #00ff00; color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+    <h2 style="color: #00ff00;">🔴 AZAM SPORT 1 HD</h2>
+
+    <div class="video-box">
+        <video id="video" controls autoplay playsinline></video>
+    </div>
+
+    <button class="btn" onclick="location.reload()">🔄 REFRESH PLAYER</button>
+
+    <script>
+        const newToken = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJleHAiOjE3Nzg0MDEzMzUsInNpcCI6IjEzMC4xNzYuMTg2LjEyNCJ9.-yPlotuGNgWqG44oD8FguJNwMc2sag0Uv-W9U4Hlp-IUrjVOnp3oCAaajL9whXMkeVtDvltKgg5UwWLKoT-F5A';
+        const manifestUri = 'https://cdnblncr.azamtvltd.co.tz/live/eds/AzamSport1/DASH/AzamSport1.mpd?cdntoken=' + newToken;
+
+        const clearKeys = {
+            'c31df1600afc33799ecac543331803f2': 'dd2101530e222f545997d4c553787f85'
+        };
+
+        async function initApp() {
+            shaka.polyfill.installAll();
+            if (shaka.Player.isBrowserSupported()) {
+                const video = document.getElementById('video');
+                const player = new shaka.Player(video);
+
+                // Configure DRM
+                player.configure({
+                    drm: { clearKeys: clearKeys }
+                });
+
+                try {
+                    await player.load(manifestUri);
+                    console.log('Video inacheza!');
+                } catch (e) {
+                    console.error('Tatizo la kupakia:', e);
+                }
+            } else {
+                console.error('Shaka player not supported!');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>

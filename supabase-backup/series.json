@@ -1,0 +1,35 @@
+[
+  {
+    "id": "LjkwLmlhOvJAdNiKLXCW",
+    "title": "Squid Game",
+    "description": "SQUD GAME",
+    "thumbnail_url": "https://vz-eadc0255-c40.b-cdn.net/b259b6c1-6b53-40c4-b99b-043e66f38174/thumbnail_d15061a5.jpg",
+    "genre": [
+      "Thriller",
+      "Action"
+    ],
+    "language": "en",
+    "total_seasons": 3,
+    "required_packages": [
+      "FEDHA",
+      "CHUMA",
+      "DHAHABU",
+      "MALKIA",
+      "ALMASI"
+    ],
+    "created_at": null,
+    "updated_at": null,
+    "views": 22,
+    "is_active": true,
+    "is_adult": false,
+    "adult_category": null,
+    "rating": 0,
+    "cast_list": [],
+    "search_keywords": [],
+    "content_purchase_enabled": false,
+    "content_price": null,
+    "content_price_days": 30,
+    "content_purchase_packages": [],
+    "video_embed_code": null
+  }
+]

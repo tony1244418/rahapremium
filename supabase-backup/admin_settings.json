@@ -1,0 +1,131 @@
+[
+  {
+    "id": "cdn_token",
+    "data": {
+      "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJleHAiOjE3NzkzMTQyODcsInNpcCI6IjE1LjE1OC40MC4xODAifQ.i3_buHnfL5AdMakYrL6T8p3Fw-DKLPemhgmcyr_dVY-bYTJIijQcews9BtHv7pIqkpG_X74C_il9bzs_Qv_kjQ"
+    },
+    "updated_at": "2026-05-13T19:28:54.909+00:00",
+    "updated_by": "3afd8b8c-6441-415f-95cd-382244664906"
+  },
+  {
+    "id": "contentSync",
+    "data": {
+      "status": "idle",
+      "lastError": null,
+      "lastRunAt": null,
+      "lastRunBy": null,
+      "runningSince": null,
+      "lastRunSource": null,
+      "lastRunSummary": null
+    },
+    "updated_at": "2026-05-03T16:47:27.185822+00:00",
+    "updated_by": "system"
+  },
+  {
+    "id": "controlCenter",
+    "data": {
+      "officeHours": "08:00 - 22:00 EAT",
+      "socialTiktok": "https://hpanel.hostinger.com/?&_gl=1%2A6lb1g7%2A_ga%2ANzQ1NzU5MDc2LjE3NjcyNDkzODM.%2A_ga_73N1QWLEMH%2AczE3NjcyNDkzODIkbzEkZzEkdDE3NjcyNDk0MTckajYwJGwwJGgyMjMwMDkyMzMkZFdDcTRmNHBKaEk0UmJGR1AweVJaaUNaUWtORzRpLWt6ZXc.%2A_fplc%2ARVN2ZUFjZk0yRkZJRDRmOGlIV0ElMkJtQlBDZ0lwOWhjS1dDc1AxNXBZbjB1Q1d5QklqY09ObWo3ZVhMcnRQdTVxSFh2Wk40WWFCOVU5SFdWUWVZNGcxb011NU0lMkJMb2loaVIzOHJVWjZIeFIlMkZOTGNON2xTWks5a2I5cDhOTEVnJTNEJTNE%2A_gcl_aw%2AR0NMLjE3NjcyNDk0MTcuQ2owS0NRaUFzTlBLQmhDcUFSSXNBQ20wMWZSemhfdTdTOGZSclpnWkZnVGtIWllFNHF3clRYOXpkeDc3NFR2dld1Vll2bmd2UVVDT2Vja2FBbTVtRUFMd193Y0I.%2A_gcl_au%2AODY1NzY2NjY2LjE3NjcyNDkzODMuMjAxNTcyNTE4Ni4xNzY3MjQ5Mzg3LjE3NjcyNDk0MDE.%2AFPAU%2AODY1NzY2NjY2LjE3NjcyNDkzODM.",
+      "supportEmail": "support@rahapremium.com",
+      "socialTwitter": "",
+      "socialYoutube": "",
+      "socialFacebook": "",
+      "socialTelegram": "",
+      "socialWhatsapp": "https://whatsapp.com/channel/0029Vb8N1s1KwqSQ2ixK8h19",
+      "socialInstagram": "",
+      "supportWhatsapp": "+255 700 000 000",
+      "maintenanceMessage": "Our engineers are performing scheduled upgrades.",
+      "maintenanceHeadline": "We'll be right back!",
+      "maintenanceSupportNote": "Refresh in a few minutes or contact support."
+    },
+    "updated_at": "2026-05-06T21:06:44.656+00:00",
+    "updated_by": "system"
+  },
+  {
+    "id": "packages",
+    "data": {
+      "FARU": {
+        "days": 1,
+        "name": "FARU",
+        "price": 20000
+      },
+      "CHUMA": {
+        "days": 7,
+        "name": "CHUMA",
+        "price": 10000,
+        "description": "Angalia movies,mpira na download games"
+      },
+      "FEDHA": {
+        "days": 1,
+        "name": "FEDHA",
+        "price": 2000,
+        "description": "Angalia movies,mpira na download games"
+      },
+      "NDOVU": {
+        "days": 1,
+        "name": "NDOVU",
+        "price": 15000
+      },
+      "SIMBA": {
+        "days": 1,
+        "name": "SIMBA",
+        "price": 9000
+      },
+      "SWALA": {
+        "days": 1,
+        "name": "SWALA",
+        "price": 5000
+      },
+      "TWIGA": {
+        "days": 1,
+        "name": "TWIGA",
+        "price": 30000
+      },
+      "ZEBRA": {
+        "days": 1,
+        "name": "ZEBRA",
+        "price": 8000
+      },
+      "ALMASI": {
+        "days": 30,
+        "name": "ALMASI",
+        "price": 28000,
+        "description": "Angalia movies,mpira na download games\nDevice:2"
+      },
+      "MALKIA": {
+        "days": 60,
+        "name": "MALKIA",
+        "price": 46000,
+        "description": "Angalia movies,mpira na download games\nDevice:4"
+      },
+      "DHAHABU": {
+        "days": 14,
+        "name": "DHAHABU",
+        "price": 16000,
+        "description": "Angalia movies,mpira na download games"
+      },
+      "KITONGA": {
+        "days": 1,
+        "name": "KITONGA",
+        "price": 1000
+      }
+    },
+    "updated_at": "2026-05-14T19:13:59.18+00:00",
+    "updated_by": "admin"
+  },
+  {
+    "id": "toggleControls",
+    "data": {
+      "weeklyDigest": true,
+      "registrations": true,
+      "manualPayments": true,
+      "autoContentSync": false,
+      "feedbackEnabled": true,
+      "maintenanceMode": false,
+      "feedbackIconVisible": true,
+      "liveTvSliderEnabled": true
+    },
+    "updated_at": "2026-05-03T22:29:20.605+00:00",
+    "updated_by": "3afd8b8c-6441-415f-95cd-382244664906"
+  }
+]

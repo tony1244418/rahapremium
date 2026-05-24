@@ -1,0 +1,44 @@
+[
+  {
+    "id": "C6cQ9fT1FCefadDodDHA",
+    "series_id": "LjkwLmlhOvJAdNiKLXCW",
+    "season_number": 2,
+    "title": null,
+    "description": "Squid Game",
+    "video_url": "https://iframe.mediadelivery.net/play/556165/39fd51b8-f1a6-4e6e-aea1-8572fd18a6f4",
+    "download_url": "https://vz-63993806-46f.b-cdn.net/39fd51b8-f1a6-4e6e-aea1-8572fd18a6f4/ORIGINAL",
+    "google_drive_url": "https://iframe.mediadelivery.net/play/556165/39fd51b8-f1a6-4e6e-aea1-8572fd18a6f4",
+    "thumbnail_url": "https://vz-63993806-46f.b-cdn.net/39fd51b8-f1a6-4e6e-aea1-8572fd18a6f4/thumbnail_fb37829c.jpg",
+    "total_episodes": 0,
+    "created_at": null,
+    "updated_at": null
+  },
+  {
+    "id": "JgHYSxqAE1ZHRBvjCqP3",
+    "series_id": "LjkwLmlhOvJAdNiKLXCW",
+    "season_number": 1,
+    "title": null,
+    "description": "SQUID GAME",
+    "video_url": "https://vz-eadc0255-c40.b-cdn.net/b259b6c1-6b53-40c4-b99b-043e66f38174/thumbnail_d15061a5.jpg",
+    "download_url": null,
+    "google_drive_url": "https://vz-eadc0255-c40.b-cdn.net/b259b6c1-6b53-40c4-b99b-043e66f38174/thumbnail_d15061a5.jpg",
+    "thumbnail_url": "https://vz-eadc0255-c40.b-cdn.net/8f56bb24-3da1-4ce3-8d2b-89b3954085f3/thumbnail_1198c703.jpg",
+    "total_episodes": 13,
+    "created_at": null,
+    "updated_at": null
+  },
+  {
+    "id": "nnjPM9axIaHFbALgsTFY",
+    "series_id": "LjkwLmlhOvJAdNiKLXCW",
+    "season_number": 3,
+    "title": null,
+    "description": null,
+    "video_url": "https://vz-283161e7-a36.b-cdn.net/53aaf55d-c737-48e5-ab5a-2cb454474951/original",
+    "download_url": "https://iframe.mediadelivery.net/play/556166/53aaf55d-c737-48e5-ab5a-2cb454474951",
+    "google_drive_url": "https://vz-283161e7-a36.b-cdn.net/53aaf55d-c737-48e5-ab5a-2cb454474951/original",
+    "thumbnail_url": "https://vz-283161e7-a36.b-cdn.net/53aaf55d-c737-48e5-ab5a-2cb454474951/thumbnail_5a576c68.jpg",
+    "total_episodes": 10,
+    "created_at": null,
+    "updated_at": null
+  }
+]

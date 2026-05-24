@@ -1,0 +1,48 @@
+{
+  "name": "rahapremium",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "build:analyze": "ANALYZE=true npm run build",
+    "build:vercel": "next build",
+    "deploy:vercel": "vercel --prod",
+    "preview": "next build && next start",
+    "generate-icons": "node scripts/generate-icons.js GATEWAY/logo.png public"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.105.1",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "autoprefixer": "^10.0.1",
+    "axios": "^1.12.1",
+    "dashjs": "^5.1.0",
+    "eslint": "^8",
+    "eslint-config-next": "15.5.2",
+    "exceljs": "^4.4.0",
+    "firebase": "^10.0.0",
+    "framer-motion": "12.23.12",
+    "hls.js": "^1.6.15",
+    "jsqr": "^1.4.0",
+    "lucide-react": "0.542.0",
+    "next": "^15.5.9",
+    "next-auth": "^4.24.12",
+    "pg": "^8.21.0",
+    "postcss": "^8",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "shaka-player": "^4.16.12",
+    "sharp": "^0.34.5",
+    "tailwindcss": "3.4.17",
+    "typescript": "^5"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19"
+  }
+}
