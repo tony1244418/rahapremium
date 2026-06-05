@@ -541,7 +541,7 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
                   return url;
                 }
               };
-            });
+            }, true);
             
             dashPlayer.initialize(video, streamUrl, true);
             
