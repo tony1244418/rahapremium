@@ -1,0 +1,43 @@
+# Hostinger / Apache / LiteSpeed config for rahapremium.com
+#
+# 1. Force the apex domain (rahapremium.com) to redirect to the canonical
+#    www host. OneSignal is registered for https://www.rahapremium.com, and
+#    serving the app on the apex breaks both push notifications and any
+#    static asset that Apache mis-types (e.g. .css served as text/plain).
+#
+# 2. Force HTTPS (defensive — Hostinger usually does this already).
+#
+# 3. Make sure CSS / JS / SVG / fonts get the correct Content-Type header
+#    when Apache happens to serve them directly from /_next/static. This
+#    fixes the "Refused to apply style ... MIME type 'text/plain'" error
+#    when X-Content-Type-Options: nosniff is enabled.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Apex -> www (only for the bare rahapremium.com, leave subdomains alone)
+    RewriteCond %{HTTP_HOST} ^rahapremium\.com$ [NC]
+    RewriteRule ^(.*)$ https://www.rahapremium.com/$1 [R=301,L]
+
+    # Force HTTPS
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+</IfModule>
+
+# Correct MIME types for Next.js static assets when served directly by Apache.
+<IfModule mod_mime.c>
+    AddType text/css                                .css
+    AddType application/javascript                  .js .mjs
+    AddType application/json                        .json
+    AddType application/manifest+json               .webmanifest
+    AddType image/svg+xml                           .svg .svgz
+    AddType image/webp                              .webp
+    AddType image/avif                              .avif
+    AddType font/woff                               .woff
+    AddType font/woff2                              .woff2
+    AddType font/ttf                                .ttf
+    AddType font/otf                                .otf
+    AddType application/wasm                        .wasm
+    AddType text/x-component                        .rsc
+</IfModule>

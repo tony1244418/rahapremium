@@ -93,6 +93,15 @@ export default function AdminPaymentsPage() {
   // ── Revenue calculations ───────────────────────────────────────────────
   // NOTE: manually-completed payments are excluded from gateway totals
   // and tracked separately under `manual` / `manualCount`.
+  // Some legacy rows have created_at = NULL (older inserts didn't set it),
+  // so we fall back to completed_at when grouping by day.
+  const paymentDate = (p: Payment): Date | null => {
+    const raw = p.created_at || p.completed_at;
+    if (!raw) return null;
+    const d = new Date(raw);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
   const revenueFor = (targetPayments: Payment[]): GatewayRevenue => {
     const completed = targetPayments.filter(p => p.status === 'completed');
     return completed.reduce(
@@ -118,15 +127,18 @@ export default function AdminPaymentsPage() {
 
   const todayRevenue = React.useMemo((): GatewayRevenue => {
     const start = new Date(); start.setHours(0, 0, 0, 0);
-    return revenueFor(payments.filter(p => new Date(p.created_at) >= start));
+    return revenueFor(payments.filter(p => {
+      const d = paymentDate(p);
+      return d !== null && d >= start;
+    }));
   }, [payments]);
 
   const yesterdayRevenue = React.useMemo((): GatewayRevenue => {
     const startY = new Date(); startY.setDate(startY.getDate() - 1); startY.setHours(0, 0, 0, 0);
     const endY = new Date(); endY.setHours(0, 0, 0, 0);
     return revenueFor(payments.filter(p => {
-      const d = new Date(p.created_at);
-      return d >= startY && d < endY;
+      const d = paymentDate(p);
+      return d !== null && d >= startY && d < endY;
     }));
   }, [payments]);
 

@@ -49,29 +49,19 @@ function LiveTVContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [cdnToken, setCdnToken] = useState<string | null>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const fetchToken = async () => {
-      try {
-        const response = await fetch('/api/cdn-token');
-        if (response.ok) {
-          const data = await response.json();
-          if (data?.token) {
-            setCdnToken(data.token);
-          } else {
-            setCdnToken('');
-          }
-        } else {
-          setCdnToken('');
-        }
-      } catch (err) {
-        console.error('Error fetching CDN token:', err);
-        setCdnToken('');
+  // Always fetch a fresh CDN token on demand — never cache it here
+  const fetchCdnToken = useCallback(async (): Promise<string> => {
+    try {
+      const response = await fetch(`/api/cdn-token?t=${Date.now()}`, { cache: 'no-store' });
+      if (response.ok) {
+        const data = await response.json();
+        return data?.token || '';
       }
-    };
-    fetchToken();
+    } catch (err) {
+      console.error('Error fetching CDN token:', err);
+    }
+    return '';
   }, []);
 
   useEffect(() => {
@@ -251,7 +241,6 @@ function LiveTVContent() {
   // Initialize player whenever selectedChannel changes
   useEffect(() => {
     if (!selectedChannel) { destroyInlinePlayers(); return; }
-    if (cdnToken === null) return; // Wait until token resolves (can be empty string)
     if (selectedChannel.videoEmbedCode) return; // iframe embed — no player needed
 
     setPlayerError(null);
@@ -268,68 +257,72 @@ function LiveTVContent() {
     const video = inlineVideoRef.current;
     if (!video) return;
 
-    // Build URL — for DASH/clearkey: append cdntoken= directly (no proxy)
-    // Matches: const manifestUri = MPD_URL + '?cdntoken=' + newToken
-    let url = selectedChannel.streamUrl;
-    const isDashChannel = selectedChannel.streamFormat === 'dash' || url.includes('.mpd');
-    if (cdnToken && !url.includes('cdntoken=') && !url.includes('token=')) {
-      const separator = url.includes('?') ? '&' : '?';
-      url = `${url}${separator}cdntoken=${cdnToken}`;
-    }
+    // Always fetch a fresh token before starting any channel
+    let cancelled = false;
+    (async () => {
+      const cdnToken = await fetchCdnToken();
+      if (cancelled) return;
 
-    let parsedClearKeys = selectedChannel.clearKeys;
-    if (typeof parsedClearKeys === 'string') {
-      try {
-        parsedClearKeys = JSON.parse(parsedClearKeys);
-      } catch (e) {
-        console.error('Failed to parse clearKeys:', e);
-        parsedClearKeys = {};
+      // Build URL — for DASH/clearkey: append cdntoken= directly (no proxy)
+      let url = selectedChannel.streamUrl;
+      if (cdnToken && !url.includes('cdntoken=') && !url.includes('token=')) {
+        const separator = url.includes('?') ? '&' : '?';
+        url = `${url}${separator}cdntoken=${cdnToken}`;
       }
-    }
 
-    const fmt = selectedChannel.streamFormat || '';
-    const isDash = fmt === 'dash' || url.includes('.mpd');
-    const isHls  = fmt === 'hls'  || url.includes('.m3u8');
-    const hasClearKey = selectedChannel.encryptionType === 'clearkey' &&
-      parsedClearKeys && Object.keys(parsedClearKeys).length > 0;
-
-    // Attempt to play unmuted first (best user experience)
-    // If browser policy blocks it, fallback to muted autoplay
-    const onReady = () => {
-      setPlayerLoading(false);
-      video.muted = false;
-      video.play().catch(() => {
-        video.muted = true;
-        video.play().catch(() => {});
-      });
-
-      // Start 30s trial countdown if in trial mode
-      if (isTrial) {
-        let left = TRIAL_DURATION;
-        trialTimerRef.current = setInterval(() => {
-          left -= 1;
-          setTrialSecondsLeft(left);
-          if (left <= 0) {
-            clearInterval(trialTimerRef.current!);
-            trialTimerRef.current = null;
-            // Completely destroy player to prevent native controls from resuming
-            destroyInlinePlayers();
-            setTrialExpired(true);
-          }
-        }, 1000);
+      let parsedClearKeys = selectedChannel.clearKeys;
+      if (typeof parsedClearKeys === 'string') {
+        try {
+          parsedClearKeys = JSON.parse(parsedClearKeys);
+        } catch (e) {
+          console.error('Failed to parse clearKeys:', e);
+          parsedClearKeys = {};
+        }
       }
-    };
-    const onErr   = (msg: string) => { setPlayerLoading(false); setPlayerError(msg); };
 
-    if (isDash || hasClearKey) {
-      // --- Shaka Player for DASH / ClearKey ---
-      (async () => {
+      const fmt = selectedChannel.streamFormat || '';
+      const isDash = fmt === 'dash' || url.includes('.mpd');
+      const isHls  = fmt === 'hls'  || url.includes('.m3u8');
+      const hasClearKey = selectedChannel.encryptionType === 'clearkey' &&
+        parsedClearKeys && Object.keys(parsedClearKeys).length > 0;
+
+      // Attempt to play unmuted first (best user experience)
+      // If browser policy blocks it, fallback to muted autoplay
+      const onReady = () => {
+        setPlayerLoading(false);
+        video.muted = false;
+        video.play().catch(() => {
+          video.muted = true;
+          video.play().catch(() => {});
+        });
+
+        // Start 30s trial countdown if in trial mode
+        if (isTrial) {
+          let left = TRIAL_DURATION;
+          trialTimerRef.current = setInterval(() => {
+            left -= 1;
+            setTrialSecondsLeft(left);
+            if (left <= 0) {
+              clearInterval(trialTimerRef.current!);
+              trialTimerRef.current = null;
+              // Completely destroy player to prevent native controls from resuming
+              destroyInlinePlayers();
+              setTrialExpired(true);
+            }
+          }, 1000);
+        }
+      };
+      const onErr = (msg: string) => { setPlayerLoading(false); setPlayerError(msg); };
+
+      if (isDash || hasClearKey) {
+        // --- Shaka Player for DASH / ClearKey ---
         try {
           const shakaModule = await import('shaka-player');
           const shaka = (shakaModule as any).default ?? shakaModule;
           shaka.polyfill.installAll();
           if (!shaka.Player.isBrowserSupported()) throw new Error('Browser not supported');
 
+          if (cancelled) return;
           const player = new shaka.Player();
           await player.attach(video);
           inlineShakaRef.current = player;
@@ -342,14 +335,13 @@ function LiveTVContent() {
           });
 
           // NO proxy, NO request filter — load directly from CDN
-          // Matches: await player.load(manifestUri)
           await player.load(url);
+          if (cancelled) { player.destroy(); return; }
           onReady();
 
           // Populate quality tracks and audio languages after load
           const tracks = player.getVariantTracks();
           if (tracks && tracks.length > 1) {
-            // Deduplicate by height, keep highest bandwidth per height
             const byHeight = new Map<number, any>();
             tracks.forEach((t: any) => {
               const h = t.height || 0;
@@ -368,54 +360,58 @@ function LiveTVContent() {
             setActiveLanguage(player.getConfiguration().preferredAudioLanguage || langs[0]);
           }
         } catch (err: any) {
-          onErr(`Player init failed: ${err?.message || err}`);
+          if (!cancelled) onErr(`Player init failed: ${err?.message || err}`);
         }
-      })();
 
-    } else if (isHls) {
-      // --- HLS.js ---
-      if (Hls.isSupported()) {
-        const hls = new Hls({ lowLatencyMode: true, maxBufferLength: 30 });
-        inlineHlsRef.current = hls;
-        hls.loadSource(url);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-          onReady();
-          // Populate HLS Quality Tracks
-          if (data.levels && data.levels.length > 1) {
-            const tracks = data.levels.map((l: any, i: number) => ({ id: i, height: l.height, bandwidth: l.bitrate }));
-            const sorted = tracks.sort((a: any, b: any) => (b.height || 0) - (a.height || 0));
-            setQualityTracks(sorted);
-            setActiveTrackId(null);
-          }
-          // Populate HLS Audio Languages
-          if (hls.audioTracks && hls.audioTracks.length > 1) {
-            const langs = hls.audioTracks.map((t: any) => t.name || t.lang || 'Unknown');
-            setAudioLanguages(langs);
-            if (hls.audioTrack > -1 && hls.audioTracks[hls.audioTrack]) {
-              setActiveLanguage(hls.audioTracks[hls.audioTrack].name || hls.audioTracks[hls.audioTrack].lang || 'Unknown');
+      } else if (isHls) {
+        // --- HLS.js ---
+        if (Hls.isSupported()) {
+          const hls = new Hls({ lowLatencyMode: true, maxBufferLength: 30 });
+          inlineHlsRef.current = hls;
+          hls.loadSource(url);
+          hls.attachMedia(video);
+          hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+            if (cancelled) return;
+            onReady();
+            // Populate HLS Quality Tracks
+            if (data.levels && data.levels.length > 1) {
+              const tracks = data.levels.map((l: any, i: number) => ({ id: i, height: l.height, bandwidth: l.bitrate }));
+              const sorted = tracks.sort((a: any, b: any) => (b.height || 0) - (a.height || 0));
+              setQualityTracks(sorted);
+              setActiveTrackId(null);
             }
-          }
-        });
-        hls.on(Hls.Events.ERROR, (_: any, data: any) => {
-          if (data.fatal) onErr('HLS error — stream unreachable or unsupported format.');
-        });
-      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            // Populate HLS Audio Languages
+            if (hls.audioTracks && hls.audioTracks.length > 1) {
+              const langs = hls.audioTracks.map((t: any) => t.name || t.lang || 'Unknown');
+              setAudioLanguages(langs);
+              if (hls.audioTrack > -1 && hls.audioTracks[hls.audioTrack]) {
+                setActiveLanguage(hls.audioTracks[hls.audioTrack].name || hls.audioTracks[hls.audioTrack].lang || 'Unknown');
+              }
+            }
+          });
+          hls.on(Hls.Events.ERROR, (_: any, data: any) => {
+            if (data.fatal && !cancelled) onErr('HLS error — stream unreachable or unsupported format.');
+          });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = url;
+          video.addEventListener('loadedmetadata', onReady, { once: true });
+        } else {
+          onErr('HLS is not supported in this browser.');
+        }
+
+      } else {
+        // --- Direct MP4 / other ---
         video.src = url;
         video.addEventListener('loadedmetadata', onReady, { once: true });
-      } else {
-        onErr('HLS is not supported in this browser.');
+        video.addEventListener('error', () => { if (!cancelled) onErr('Failed to load stream.'); }, { once: true });
       }
 
-    } else {
-      // --- Direct MP4 / other ---
-      video.src = url;
-      video.addEventListener('loadedmetadata', onReady, { once: true });
-      video.addEventListener('error', () => onErr('Failed to load stream.'), { once: true });
-    }
-
-    return () => { destroyInlinePlayers(); };
-  }, [selectedChannel?.id, destroyInlinePlayers, cdnToken]);
+    })(); // end async IIFE
+    return () => {
+      cancelled = true;
+      destroyInlinePlayers();
+    };
+  }, [selectedChannel?.id, destroyInlinePlayers, fetchCdnToken]);
 
   const renderPlayer = () => {
     if (!selectedChannel) return null;

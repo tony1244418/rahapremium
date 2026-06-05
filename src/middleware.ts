@@ -1,8 +1,24 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+const CANONICAL_HOST = 'www.rahapremium.com';
+const APEX_HOST = 'rahapremium.com';
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const host = request.headers.get('host') || '';
+
+  // Force the apex domain (rahapremium.com) to redirect to the canonical
+  // www host. OneSignal is registered for https://www.rahapremium.com, and
+  // serving the app on the apex also causes mixed-MIME issues from Apache.
+  // We do this before any other matching so it applies to every page request.
+  if (host === APEX_HOST) {
+    const url = request.nextUrl.clone();
+    url.host = CANONICAL_HOST;
+    url.protocol = 'https:';
+    url.port = '';
+    return NextResponse.redirect(url, 308);
+  }
 
   // Allow PWA files without authentication (static files are served before middleware)
   // This check is here for safety but static files bypass middleware

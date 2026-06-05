@@ -18,7 +18,7 @@ const CLICKPESA_CALLBACK_URL =
   process.env.CLICKPESA_CALLBACK_URL ||
   (process.env.NEXT_PUBLIC_SITE_URL
     ? `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhook/clickpesa`
-    : 'https://rahapremium.com/api/webhook/clickpesa');
+    : 'https://www.rahapremium.com/api/webhook/clickpesa');
 
 // ─── HarakaPay Config ─────────────────────────────────────────────────────────
 const HARAKAPAY_API_BASE = 'https://harakapay.net/api/v1';
@@ -30,7 +30,7 @@ const HARAKAPAY_WEBHOOK_URL =
   process.env.HARAKAPAY_WEBHOOK_URL ||
   (process.env.NEXT_PUBLIC_SITE_URL
     ? `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhook/harakapay`
-    : 'https://rahapremium.com/api/webhook/harakapay');
+    : 'https://www.rahapremium.com/api/webhook/harakapay');
 
 
 

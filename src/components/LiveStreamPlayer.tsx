@@ -40,30 +40,37 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
   const shakaRef = useRef<any>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [useIframe, setUseIframe] = useState(false);
-  const [cdnToken, setCdnToken] = useState<string | null>(null);
+  const [isTokenReady, setIsTokenReady] = useState(false);
+  const latestCdnTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
     const fetchToken = async () => {
       try {
-        const response = await fetch('/api/cdn-token');
+        const response = await fetch(`/api/cdn-token?t=${Date.now()}`, { cache: 'no-store' });
         if (response.ok) {
           const data = await response.json();
-          if (data?.token) {
-            setCdnToken(data.token);
-          } else {
-            setCdnToken('');
-          }
+          latestCdnTokenRef.current = data?.token || '';
         } else {
-          setCdnToken('');
+          latestCdnTokenRef.current = '';
         }
       } catch (err) {
         console.error('Error fetching CDN token:', err);
-        setCdnToken('');
+        latestCdnTokenRef.current = '';
       }
+      setIsTokenReady(true);
     };
+
     if (isOpen) {
+      setIsTokenReady(false);
       fetchToken();
+      intervalId = setInterval(fetchToken, 2 * 60 * 1000);
     }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, [isOpen]);
 
   // Hide bottom navigation when live TV is playing
@@ -102,17 +109,18 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
   // Initialize video player based on stream format
   useEffect(() => {
     if (!isOpen || !videoRef.current) return;
-    if (cdnToken === null) return; // Wait until token resolves
+    if (!isTokenReady) return; // Wait until token resolves
 
     const video = videoRef.current;
     // For DASH/clearkey streams, we handle the token in the DASH section directly.
     // For HLS, append the CDN token now.
     const isDashStream = channel.streamFormat === 'dash' || channel.streamUrl.includes('.mpd');
     let streamUrl = channel.streamUrl;
-    if (cdnToken && !isDashStream) {
+    const currentToken = latestCdnTokenRef.current;
+    if (currentToken && !isDashStream) {
       const separator = streamUrl.includes('?') ? '&' : '?';
       if (!streamUrl.includes('token=') && !streamUrl.includes('cdntoken=')) {
-        streamUrl = `${streamUrl}${separator}cdntoken=${cdnToken}`;
+        streamUrl = `${streamUrl}${separator}cdntoken=${currentToken}`;
       }
     }
 
@@ -138,6 +146,23 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
 
     const loadStream = async () => {
       try {
+        // Define custom loader for hls.js to append the latest token dynamically
+        const customLoader = function (config: any) {
+          const loader = new Hls.DefaultConfig.loader(config);
+          this.abort = () => loader.abort();
+          this.destroy = () => loader.destroy();
+          this.load = (context: any, config: any, callbacks: any) => {
+            if (latestCdnTokenRef.current) {
+              try {
+                const urlObj = new URL(context.url);
+                urlObj.searchParams.set('cdntoken', latestCdnTokenRef.current);
+                context.url = urlObj.toString();
+              } catch (e) {}
+            }
+            loader.load(context, config, callbacks);
+          };
+        };
+
         // Check for PHP script URLs or URLs with custom ports that might return streams
         const isPhpScript = streamUrl.includes('/live.php') || streamUrl.includes('/play/live.php') || streamUrl.includes('extension=ts') || streamUrl.includes('extension=m3u8');
         const hasCustomPort = /:\d{4,5}\//.test(streamUrl) || /:\d{4,5}$/.test(streamUrl);
@@ -170,6 +195,8 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
                 fragLoadingTimeOut: 20000,
                 manifestLoadingTimeOut: 10000,
                 levelLoadingTimeOut: 10000,
+                pLoader: customLoader as any,
+                fLoader: customLoader as any,
                 xhrSetup: (xhr, url) => {
                   xhr.withCredentials = false;
                 }
@@ -300,6 +327,8 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
               fragLoadingTimeOut: 20000,
               manifestLoadingTimeOut: 10000,
               levelLoadingTimeOut: 10000,
+              pLoader: customLoader as any,
+              fLoader: customLoader as any,
               // Add CORS and credentials support for PHP scripts and HTTP URLs
               xhrSetup: (xhr, url) => {
                 xhr.withCredentials = false;
@@ -403,16 +432,16 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
             }
           }
 
-          if (channel.encryptionType === 'clearkey' && parsedClearKeys && Object.keys(parsedClearKeys).length > 0) {
-            // Build the manifest URL with cdntoken appended — exactly like the HTML snippet:
-            // const manifestUri = MPD_URL + '?cdntoken=' + newToken
-            let manifestUrl = channel.streamUrl; // always use the raw URL from channel
-            if (cdnToken) {
-              const sep = manifestUrl.includes('?') ? '&' : '?';
-              if (!manifestUrl.includes('cdntoken=') && !manifestUrl.includes('token=')) {
-                manifestUrl = `${manifestUrl}${sep}cdntoken=${cdnToken}`;
+            if (channel.encryptionType === 'clearkey' && parsedClearKeys && Object.keys(parsedClearKeys).length > 0) {
+              // Build the manifest URL with cdntoken appended — exactly like the HTML snippet:
+              let manifestUrl = channel.streamUrl; // always use the raw URL from channel
+              const currentToken = latestCdnTokenRef.current;
+              if (currentToken) {
+                const sep = manifestUrl.includes('?') ? '&' : '?';
+                if (!manifestUrl.includes('cdntoken=') && !manifestUrl.includes('token=')) {
+                  manifestUrl = `${manifestUrl}${sep}cdntoken=${currentToken}`;
+                }
               }
-            }
 
             // Use Shaka Player for ClearKey — dynamically imported to avoid Next.js SSR issues
             try {
@@ -436,7 +465,18 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
                 }
               });
 
-              // NO proxy, NO request filter — load directly from CDN
+              // Add request filter to append the latest CDN token dynamically
+              shakaPlayer.getNetworkingEngine().registerRequestFilter((type: any, request: any) => {
+                if (latestCdnTokenRef.current && request.uris && request.uris[0]) {
+                  try {
+                    const urlObj = new URL(request.uris[0]);
+                    urlObj.searchParams.set('cdntoken', latestCdnTokenRef.current);
+                    request.uris[0] = urlObj.toString();
+                  } catch (e) {}
+                }
+              });
+
+              // NO proxy — load directly from CDN
               // Matches: await player.load(manifestUri)
               const finalStreamUrl = manifestUrl;
 
@@ -487,6 +527,21 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
           } else {
             // Use dashjs for regular (non-encrypted) DASH streams
             const dashPlayer = dashjs.MediaPlayer().create();
+            
+            dashPlayer.extend('RequestModifier', function () {
+              return {
+                modifyRequestURL: function (url: string) {
+                  if (latestCdnTokenRef.current) {
+                    try {
+                      const urlObj = new URL(url);
+                      urlObj.searchParams.set('cdntoken', latestCdnTokenRef.current);
+                      return urlObj.toString();
+                    } catch(e) { return url; }
+                  }
+                  return url;
+                }
+              };
+            });
             
             dashPlayer.initialize(video, streamUrl, true);
             
@@ -589,7 +644,7 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
       }
       setUseIframe(false);
     };
-  }, [isOpen, channel.streamUrl, channel.streamFormat, channel.encryptionType, channel.clearKeys, cdnToken]);
+  }, [isOpen, channel.streamUrl, channel.streamFormat, channel.encryptionType, channel.clearKeys, isTokenReady]);
 
   const handleRetry = () => {
     setError(null);

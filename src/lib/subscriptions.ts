@@ -338,7 +338,8 @@ export const initiatePayment = async (
     phone_number: phoneNumber,
     status: 'pending',
     is_manually_completed: false,
-    payment_type: 'subscription'
+    payment_type: 'subscription',
+    created_at: new Date().toISOString()
   };
 
   const { data: docRef, error } = await supabase.from('payments').insert(paymentRequest).select().single();
@@ -412,7 +413,8 @@ export const initiateGamePayment = async (
     phone_number: phoneNumber,
     status: 'pending',
     is_manually_completed: false,
-    payment_type: 'game'
+    payment_type: 'game',
+    created_at: new Date().toISOString()
   };
 
   const { data: docRef, error } = await supabase.from('payments').insert(paymentRequest).select().single();
@@ -487,7 +489,8 @@ export const initiateContentPayment = async (
     status: 'pending',
     is_manually_completed: false,
     payment_type: 'content',
-    content_duration_days: durationDays
+    content_duration_days: durationDays,
+    created_at: new Date().toISOString()
   };
 
   const { data: docRef, error } = await supabase.from('payments').insert(paymentRequest).select().single();

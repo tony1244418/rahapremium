@@ -60,6 +60,13 @@ const nextConfig = {
     return config;
   },
   
+  // NOTE: Apex (rahapremium.com) -> www redirect is handled in two places
+  // because this app is served by Hostinger (Apache + Node), not Vercel:
+  //   1. public/.htaccess  — when Apache/LiteSpeed handles the request directly
+  //   2. src/middleware.ts — when the request reaches the Next.js Node server
+  // Keeping both layers ensures the apex always redirects regardless of which
+  // tier serves the request.
+
   // Security & Permission Headers for live/Vercel deployment
   async headers() {
     return [
