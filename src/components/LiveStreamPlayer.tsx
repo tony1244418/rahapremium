@@ -147,21 +147,28 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
     const loadStream = async () => {
       try {
         // Define custom loader for hls.js to append the latest token dynamically
-        const customLoader = function (config: any) {
-          const loader = new Hls.DefaultConfig.loader(config);
-          this.abort = () => loader.abort();
-          this.destroy = () => loader.destroy();
-          this.load = (context: any, config: any, callbacks: any) => {
-            if (latestCdnTokenRef.current) {
-              try {
-                const urlObj = new URL(context.url);
-                urlObj.searchParams.set('cdntoken', latestCdnTokenRef.current);
-                context.url = urlObj.toString();
-              } catch (e) {}
-            }
-            loader.load(context, config, callbacks);
-          };
-        };
+        // Must be a class (not a plain function) so TypeScript can type `this` correctly
+        class CdnTokenLoader {
+          abort: () => void;
+          destroy: () => void;
+          load: (context: any, loaderConfig: any, callbacks: any) => void;
+          constructor(loaderConfig: any) {
+            const loader = new Hls.DefaultConfig.loader(loaderConfig);
+            this.abort = () => loader.abort();
+            this.destroy = () => loader.destroy();
+            this.load = (context: any, cfg: any, callbacks: any) => {
+              if (latestCdnTokenRef.current) {
+                try {
+                  const urlObj = new URL(context.url);
+                  urlObj.searchParams.set('cdntoken', latestCdnTokenRef.current);
+                  context.url = urlObj.toString();
+                } catch (e) {}
+              }
+              loader.load(context, cfg, callbacks);
+            };
+          }
+        }
+        const customLoader = CdnTokenLoader;
 
         // Check for PHP script URLs or URLs with custom ports that might return streams
         const isPhpScript = streamUrl.includes('/live.php') || streamUrl.includes('/play/live.php') || streamUrl.includes('extension=ts') || streamUrl.includes('extension=m3u8');
@@ -541,7 +548,7 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
                   return url;
                 }
               };
-            });
+            }, true);
             
             dashPlayer.initialize(video, streamUrl, true);
             

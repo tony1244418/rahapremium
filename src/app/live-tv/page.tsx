@@ -281,15 +281,31 @@ function LiveTVContent() {
 
     // Always fetch a fresh token before starting any channel
     let cancelled = false;
-    (async () => {
+
+    // Declare error handler early so it can be used inside the debounce callback
+    const onErr = (msg: string) => { setPlayerLoading(false); setPlayerError(msg); };
+    
+    // Add a small debounce (500ms) to prevent spamming the Vercel API if the user switches channels rapidly
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const initTimer = (globalThis as any).setTimeout(async () => {
+      if (cancelled) return;
+      
       const cdnToken = await fetchCdnToken();
       if (cancelled) return;
 
       // Build URL — for DASH/clearkey: append cdntoken= directly (no proxy)
       let url = selectedChannel.streamUrl;
-      if (cdnToken && !url.includes('cdntoken=') && !url.includes('token=')) {
+      
+      if (cdnToken) {
+        // Strip any existing token from the database URL first
+        url = url.replace(/([?&])cdntoken=[^&]+(&|$)/, '$1').replace(/[?&]$/, '');
         const separator = url.includes('?') ? '&' : '?';
         url = `${url}${separator}cdntoken=${cdnToken}`;
+      } else {
+        // If we couldn't get a token (API failed), still strip the hardcoded one so it doesn't use a dead token
+        url = url.replace(/([?&])cdntoken=[^&]+(&|$)/, '$1').replace(/[?&]$/, '');
+        onErr('Mtandao upo chini kwa muda. Tumeshindwa kupata token (API Error 500). Tafadhali jaribu tena baada ya sekunde chache.');
+        return; // Stop initialization
       }
 
       let parsedClearKeys = selectedChannel.clearKeys;
@@ -334,7 +350,6 @@ function LiveTVContent() {
           }, 1000);
         }
       };
-      const onErr = (msg: string) => { setPlayerLoading(false); setPlayerError(msg); };
 
       if (isDash || hasClearKey) {
         // --- Shaka Player for DASH / ClearKey ---
@@ -469,9 +484,10 @@ function LiveTVContent() {
         video.addEventListener('error', () => { if (!cancelled) onErr('Failed to load stream.'); }, { once: true });
       }
 
-    })(); // end async IIFE
+    }, 500); // end debounced init
     return () => {
       cancelled = true;
+      clearTimeout(initTimer);
       destroyInlinePlayers();
     };
   }, [selectedChannel?.id, destroyInlinePlayers, fetchCdnToken]);
