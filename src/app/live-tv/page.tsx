@@ -264,21 +264,13 @@ function LiveTVContent() {
       if (cancelled) return;
 
       // Build URL — for DASH/clearkey: append cdntoken= directly (no proxy)
-      const ch = selectedChannel as any;
-      let url = ch.streamUrl || ch.stream_url || '';
-      
-      if (!url) return;
-
-      // Detect iOS devices (iPhone, iPad, iPod)
-      const isIOS = typeof navigator !== 'undefined' && 
-        (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
-
+      let url = selectedChannel.streamUrl;
       if (cdnToken && !url.includes('cdntoken=') && !url.includes('token=')) {
         const separator = url.includes('?') ? '&' : '?';
         url = `${url}${separator}cdntoken=${cdnToken}`;
       }
 
-      let parsedClearKeys = ch.clearKeys || ch.clear_keys;
+      let parsedClearKeys = selectedChannel.clearKeys;
       if (typeof parsedClearKeys === 'string') {
         try {
           parsedClearKeys = JSON.parse(parsedClearKeys);
@@ -288,58 +280,11 @@ function LiveTVContent() {
         }
       }
 
-      let fmt = selectedChannel.streamFormat || '';
-      let isDash = fmt === 'dash' || url.includes('.mpd');
-      let isHls  = fmt === 'hls'  || url.includes('.m3u8');
-      let hasClearKey = selectedChannel.encryptionType === 'clearkey' &&
+      const fmt = selectedChannel.streamFormat || '';
+      const isDash = fmt === 'dash' || url.includes('.mpd');
+      const isHls  = fmt === 'hls'  || url.includes('.m3u8');
+      const hasClearKey = selectedChannel.encryptionType === 'clearkey' &&
         parsedClearKeys && Object.keys(parsedClearKeys).length > 0;
-
-      // For iOS: Use Railway Proxy Server which decrypts the DASH stream and serves clean HLS
-      if (isIOS && (isDash || hasClearKey)) {
-        const RAILWAY_URL = 'https://rahapremium-proxy-production.up.railway.app';
-        // Use channel ID as slug (unique identifier)
-        const channelSlug = selectedChannel.id;
-
-        console.log('[iOS] Using Railway proxy for channel:', channelSlug);
-
-        // Poll Railway until stream is ready (max 30 seconds)
-        let proxyUrl: string | null = null;
-        for (let i = 0; i < 6; i++) {
-          try {
-            const proxyRes = await fetch(`${RAILWAY_URL}/watch/${channelSlug}`);
-            const proxyData = await proxyRes.json();
-            if (proxyData.status === 'ready') {
-              proxyUrl = `${RAILWAY_URL}${proxyData.url}`;
-              break;
-            }
-            // Stream is starting — wait 5 seconds and try again
-            await new Promise(r => setTimeout(r, 5000));
-          } catch (e) {
-            console.error('[iOS] Railway proxy error:', e);
-            break;
-          }
-        }
-
-        if (proxyUrl) {
-          url = proxyUrl;
-          isDash = false;
-          hasClearKey = false;
-          isHls = true;
-          console.log('[iOS] Stream ready from Railway:', url);
-        } else {
-          // Fallback: try direct HLS if Railway fails
-          const chFallback = selectedChannel as any;
-          const originalUrl = chFallback.streamUrl || chFallback.stream_url || '';
-          if (originalUrl.includes('/DASH/') && originalUrl.includes('.mpd')) {
-            url = originalUrl.replace('/DASH/', '/HLS/').replace('.mpd', '.m3u8');
-            if (cdnToken) url += (url.includes('?') ? '&' : '?') + `cdntoken=${cdnToken}`;
-          }
-          isDash = false;
-          hasClearKey = false;
-          isHls = true;
-          console.warn('[iOS] Railway fallback to direct HLS:', url);
-        }
-      }
 
       // Attempt to play unmuted first (best user experience)
       // If browser policy blocks it, fallback to muted autoplay

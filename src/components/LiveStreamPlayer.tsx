@@ -147,7 +147,7 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
     const loadStream = async () => {
       try {
         // Define custom loader for hls.js to append the latest token dynamically
-        const customLoader = function (this: any, config: any) {
+        const customLoader = function (config: any) {
           const loader = new Hls.DefaultConfig.loader(config);
           this.abort = () => loader.abort();
           this.destroy = () => loader.destroy();
@@ -541,7 +541,7 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
                   return url;
                 }
               };
-            }, true);
+            });
             
             dashPlayer.initialize(video, streamUrl, true);
             
