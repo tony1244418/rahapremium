@@ -264,7 +264,9 @@ function LiveTVContent() {
       if (cancelled) return;
 
       // Build URL — for DASH/clearkey: append cdntoken= directly (no proxy)
-      let url = selectedChannel.streamUrl;
+      let url = selectedChannel.streamUrl || selectedChannel.stream_url || '';
+      
+      if (!url) return;
 
       // Detect iOS devices (iPhone, iPad, iPod)
       const isIOS = typeof navigator !== 'undefined' && 
@@ -325,8 +327,9 @@ function LiveTVContent() {
           console.log('[iOS] Stream ready from Railway:', url);
         } else {
           // Fallback: try direct HLS if Railway fails
-          if (selectedChannel.streamUrl.includes('/DASH/') && selectedChannel.streamUrl.includes('.mpd')) {
-            url = selectedChannel.streamUrl.replace('/DASH/', '/HLS/').replace('.mpd', '.m3u8');
+          const originalUrl = selectedChannel.streamUrl || selectedChannel.stream_url || '';
+          if (originalUrl.includes('/DASH/') && originalUrl.includes('.mpd')) {
+            url = originalUrl.replace('/DASH/', '/HLS/').replace('.mpd', '.m3u8');
             if (cdnToken) url += (url.includes('?') ? '&' : '?') + `cdntoken=${cdnToken}`;
           }
           isDash = false;
