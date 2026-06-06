@@ -1,7 +1,11 @@
 // Service Worker for RahaPremium PWA
-const CACHE_NAME = 'rahapremium-v2';
+// v3 — fixed CORS redirect issue (removed apex '/' from cache list)
+const CACHE_NAME = 'rahapremium-v3';
+
+// Only cache static assets that don't redirect.
+// Removed '/' because on Hostinger the apex (rahapremium.com) redirects
+// to www, which triggers a cross-origin redirect the SW can't follow.
 const urlsToCache = [
-  '/',
   '/manifest.json',
   '/logo.png',
   '/icon-192x192.png',
@@ -13,11 +17,13 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Service Worker: Caching files');
-        return cache.addAll(urlsToCache);
-      })
-      .catch((error) => {
-        console.error('Service Worker: Cache failed', error);
+        console.log('Service Worker: Caching static assets');
+        // Use individual fetches so one failure doesn't block others
+        return Promise.allSettled(
+          urlsToCache.map(url => cache.add(url).catch(err => {
+            console.warn('SW: Failed to cache', url, err);
+          }))
+        );
       })
   );
   self.skipWaiting();
@@ -47,49 +53,45 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Skip API routes, Next.js internal assets, and external URLs
-  if (event.request.url.includes('/api/') || 
-      event.request.url.includes('/_next/') ||
-      event.request.url.includes('http://') ||
-      (event.request.url.includes('https://') && !event.request.url.includes(self.location.origin))) {
-    return;
-  }
+  const url = event.request.url;
+
+  // Skip API routes (must always be fresh)
+  if (url.includes('/api/')) return;
+
+  // Skip Next.js internal HMR / build routes
+  if (url.includes('/_next/webpack-hmr') || url.includes('/__nextjs')) return;
+
+  // Skip cross-origin requests entirely — don't intercept CDN, Supabase, etc.
+  if (!url.startsWith(self.location.origin)) return;
 
   event.respondWith(
     caches.match(event.request)
-      .then((response) => {
-        // Return cached version or fetch from network
-        return response || fetch(event.request)
+      .then((cached) => {
+        // For _next/static assets: cache-first (they have content-hash in filename)
+        if (url.includes('/_next/static/') && cached) {
+          return cached;
+        }
+
+        // For everything else: network-first, cache on success
+        return fetch(event.request)
           .then((response) => {
-            // Don't cache if not a valid response
+            // Only cache valid same-origin responses
             if (!response || response.status !== 200 || response.type !== 'basic') {
               return response;
             }
 
-            // Clone the response
             const responseToCache = response.clone();
-
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                cache.put(event.request, responseToCache);
-              });
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
 
             return response;
           })
           .catch(() => {
-            // Return offline page if available
-            if (event.request.destination === 'document') {
-              return caches.match('/');
-            }
+            // Network failed — return cached version if we have one
+            if (cached) return cached;
+            // For document requests, return nothing (browser shows its own error)
           });
       })
   );
 });
-
-
-
-
-
-
-
-
