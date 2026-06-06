@@ -290,11 +290,17 @@ function LiveTVContent() {
         }
       }
 
-      const fmt = selectedChannel.streamFormat || '';
-      const isDash = fmt === 'dash' || url.includes('.mpd');
-      const isHls  = fmt === 'hls'  || url.includes('.m3u8');
-      const hasClearKey = selectedChannel.encryptionType === 'clearkey' &&
+      let fmt = selectedChannel.streamFormat || '';
+      let isDash = fmt === 'dash' || url.includes('.mpd');
+      let isHls  = fmt === 'hls'  || url.includes('.m3u8');
+      let hasClearKey = selectedChannel.encryptionType === 'clearkey' &&
         parsedClearKeys && Object.keys(parsedClearKeys).length > 0;
+
+      if (isIOS) {
+        isDash = false;
+        hasClearKey = false;
+        isHls = true;
+      }
 
       // Attempt to play unmuted first (best user experience)
       // If browser policy blocks it, fallback to muted autoplay
