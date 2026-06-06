@@ -50,6 +50,8 @@ function LiveTVContent() {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const playerContainerRef = useRef<HTMLDivElement>(null);
+  const latestCdnTokenRef = useRef<string | null>(null);
+
   // Always fetch a fresh CDN token on demand — never cache it here
   const fetchCdnToken = useCallback(async (): Promise<string> => {
     try {
@@ -63,6 +65,26 @@ function LiveTVContent() {
     }
     return '';
   }, []);
+
+  // Refresh token periodically while playing
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
+    const updateToken = async () => {
+      const newToken = await fetchCdnToken();
+      if (newToken) {
+        latestCdnTokenRef.current = newToken;
+      }
+    };
+
+    if (selectedChannel) {
+      intervalId = setInterval(updateToken, 2 * 60 * 1000);
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [selectedChannel?.id, fetchCdnToken]);
 
   useEffect(() => {
     const unsub = subscribeToLiveChannels((channels) => {
@@ -327,14 +349,30 @@ function LiveTVContent() {
           await player.attach(video);
           inlineShakaRef.current = player;
 
-          // Configure DRM — matches: player.configure({ drm: { clearKeys: clearKeys } })
+          // Configure DRM
           player.configure({
             drm: hasClearKey
               ? { clearKeys: parsedClearKeys }
               : {},
           });
 
-          // NO proxy, NO request filter — load directly from CDN
+          // Ensure ref has initial token
+          latestCdnTokenRef.current = cdnToken;
+
+          // Add request filter to append the latest CDN token dynamically
+          player.getNetworkingEngine().registerRequestFilter((type: any, request: any) => {
+            if (latestCdnTokenRef.current && request.uris && request.uris[0]) {
+              try {
+                const urlObj = new URL(request.uris[0]);
+                if (urlObj.searchParams.has('cdntoken') || request.uris[0].includes('azamtvltd')) {
+                  urlObj.searchParams.set('cdntoken', latestCdnTokenRef.current);
+                  request.uris[0] = urlObj.toString();
+                }
+              } catch (e) {}
+            }
+          });
+
+          // Load stream
           await player.load(url);
           if (cancelled) { player.destroy(); return; }
           onReady();
@@ -366,7 +404,32 @@ function LiveTVContent() {
       } else if (isHls) {
         // --- HLS.js ---
         if (Hls.isSupported()) {
-          const hls = new Hls({ lowLatencyMode: true, maxBufferLength: 30 });
+          latestCdnTokenRef.current = cdnToken;
+
+          const customLoader = function (this: any, config: any) {
+            const loader = new Hls.DefaultConfig.loader(config);
+            this.abort = () => loader.abort();
+            this.destroy = () => loader.destroy();
+            this.load = (context: any, config: any, callbacks: any) => {
+              if (latestCdnTokenRef.current) {
+                try {
+                  const urlObj = new URL(context.url);
+                  if (urlObj.searchParams.has('cdntoken') || context.url.includes('azamtvltd')) {
+                    urlObj.searchParams.set('cdntoken', latestCdnTokenRef.current);
+                    context.url = urlObj.toString();
+                  }
+                } catch (e) {}
+              }
+              loader.load(context, config, callbacks);
+            };
+          };
+
+          const hls = new Hls({ 
+            lowLatencyMode: true, 
+            maxBufferLength: 30,
+            pLoader: customLoader as any,
+            fLoader: customLoader as any
+          });
           inlineHlsRef.current = hls;
           hls.loadSource(url);
           hls.attachMedia(video);
