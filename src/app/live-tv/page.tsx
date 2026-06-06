@@ -264,7 +264,8 @@ function LiveTVContent() {
       if (cancelled) return;
 
       // Build URL — for DASH/clearkey: append cdntoken= directly (no proxy)
-      let url = selectedChannel.streamUrl || selectedChannel.stream_url || '';
+      const ch = selectedChannel as any;
+      let url = ch.streamUrl || ch.stream_url || '';
       
       if (!url) return;
 
@@ -277,7 +278,7 @@ function LiveTVContent() {
         url = `${url}${separator}cdntoken=${cdnToken}`;
       }
 
-      let parsedClearKeys = selectedChannel.clearKeys;
+      let parsedClearKeys = ch.clearKeys || ch.clear_keys;
       if (typeof parsedClearKeys === 'string') {
         try {
           parsedClearKeys = JSON.parse(parsedClearKeys);
@@ -327,7 +328,8 @@ function LiveTVContent() {
           console.log('[iOS] Stream ready from Railway:', url);
         } else {
           // Fallback: try direct HLS if Railway fails
-          const originalUrl = selectedChannel.streamUrl || selectedChannel.stream_url || '';
+          const chFallback = selectedChannel as any;
+          const originalUrl = chFallback.streamUrl || chFallback.stream_url || '';
           if (originalUrl.includes('/DASH/') && originalUrl.includes('.mpd')) {
             url = originalUrl.replace('/DASH/', '/HLS/').replace('.mpd', '.m3u8');
             if (cdnToken) url += (url.includes('?') ? '&' : '?') + `cdntoken=${cdnToken}`;
