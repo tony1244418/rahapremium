@@ -266,14 +266,9 @@ function LiveTVContent() {
       // Build URL — for DASH/clearkey: append cdntoken= directly (no proxy)
       let url = selectedChannel.streamUrl;
 
-      // Auto-convert DASH to HLS for iOS devices (since iPhone does not support DASH)
+      // Detect iOS devices (iPhone, iPad, iPod)
       const isIOS = typeof navigator !== 'undefined' && 
         (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
-      
-      if (isIOS && url.includes('/DASH/') && url.includes('.mpd')) {
-        url = url.replace('/DASH/', '/HLS/').replace('.mpd', '.m3u8');
-        console.log('iOS detected: Converted DASH URL to HLS', url);
-      }
 
       if (cdnToken && !url.includes('cdntoken=') && !url.includes('token=')) {
         const separator = url.includes('?') ? '&' : '?';
@@ -296,10 +291,49 @@ function LiveTVContent() {
       let hasClearKey = selectedChannel.encryptionType === 'clearkey' &&
         parsedClearKeys && Object.keys(parsedClearKeys).length > 0;
 
-      if (isIOS) {
-        isDash = false;
-        hasClearKey = false;
-        isHls = true;
+      // For iOS: Use Railway Proxy Server which decrypts the DASH stream and serves clean HLS
+      if (isIOS && (isDash || hasClearKey)) {
+        const RAILWAY_URL = 'https://rahapremium-proxy-production.up.railway.app';
+        // Use channel ID as slug (unique identifier)
+        const channelSlug = selectedChannel.id;
+
+        console.log('[iOS] Using Railway proxy for channel:', channelSlug);
+
+        // Poll Railway until stream is ready (max 30 seconds)
+        let proxyUrl: string | null = null;
+        for (let i = 0; i < 6; i++) {
+          try {
+            const proxyRes = await fetch(`${RAILWAY_URL}/watch/${channelSlug}`);
+            const proxyData = await proxyRes.json();
+            if (proxyData.status === 'ready') {
+              proxyUrl = `${RAILWAY_URL}${proxyData.url}`;
+              break;
+            }
+            // Stream is starting — wait 5 seconds and try again
+            await new Promise(r => setTimeout(r, 5000));
+          } catch (e) {
+            console.error('[iOS] Railway proxy error:', e);
+            break;
+          }
+        }
+
+        if (proxyUrl) {
+          url = proxyUrl;
+          isDash = false;
+          hasClearKey = false;
+          isHls = true;
+          console.log('[iOS] Stream ready from Railway:', url);
+        } else {
+          // Fallback: try direct HLS if Railway fails
+          if (selectedChannel.streamUrl.includes('/DASH/') && selectedChannel.streamUrl.includes('.mpd')) {
+            url = selectedChannel.streamUrl.replace('/DASH/', '/HLS/').replace('.mpd', '.m3u8');
+            if (cdnToken) url += (url.includes('?') ? '&' : '?') + `cdntoken=${cdnToken}`;
+          }
+          isDash = false;
+          hasClearKey = false;
+          isHls = true;
+          console.warn('[iOS] Railway fallback to direct HLS:', url);
+        }
       }
 
       // Attempt to play unmuted first (best user experience)
