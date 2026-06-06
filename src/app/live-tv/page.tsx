@@ -52,18 +52,57 @@ function LiveTVContent() {
   const playerContainerRef = useRef<HTMLDivElement>(null);
   const latestCdnTokenRef = useRef<string | null>(null);
 
-  // Always fetch a fresh CDN token on demand — never cache it here
+  // Fetch CDN token — tries the Vercel API directly first (so the token is bound
+  // to the *browser's* IP, not the server IP). Falls back to our server route.
   const fetchCdnToken = useCallback(async (): Promise<string> => {
-    try {
-      const response = await fetch(`/api/cdn-token?t=${Date.now()}`, { cache: 'no-store' });
-      if (response.ok) {
-        const data = await response.json();
-        return data?.token || '';
+    const VERCEL_TOKEN_URL = 'https://v0-token-refresh-dashboard.vercel.app/api/token';
+
+    // Helper: call Vercel directly from the browser (token bound to browser IP)
+    const tryDirectVercel = async (): Promise<string> => {
+      try {
+        const res = await fetch(VERCEL_TOKEN_URL, {
+          method: 'POST',
+          cache: 'no-store',
+          headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(8000),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.token && typeof json.token === 'string' && json.token.length > 10) {
+            return json.token;
+          }
+        }
+      } catch {
+        // CORS or network error — fall through to server route
       }
-    } catch (err) {
-      console.error('Error fetching CDN token:', err);
-    }
-    return '';
+      return '';
+    };
+
+    // Helper: call our server route (with retries)
+    const tryServerRoute = async (): Promise<string> => {
+      for (let i = 0; i < 3; i++) {
+        try {
+          const res = await fetch(`/api/cdn-token?t=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(12000) });
+          if (res.ok) {
+            const json = await res.json();
+            if (json?.token && typeof json.token === 'string' && json.token.length > 10) {
+              return json.token;
+            }
+          }
+        } catch {
+          // ignore
+        }
+        if (i < 2) await new Promise(r => setTimeout(r, 600 * (i + 1))); // 600ms, 1200ms
+      }
+      return '';
+    };
+
+    // 1. Try browser-direct first (best: token bound to user's real IP)
+    const directToken = await tryDirectVercel();
+    if (directToken) return directToken;
+
+    // 2. Fall back to server route
+    return tryServerRoute();
   }, []);
 
   // Refresh token periodically while playing
