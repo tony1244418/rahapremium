@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 const CDN_TOKEN_URL = 'https://v0-token-refresh-dashboard.vercel.app/api/token';
 const FALLBACK_TOKEN = '9mtbtkZuZYH3TvzrMcC4Mgu6CpuN0ogV';
-const CACHE_DURATION_MS = 15 * 1000; // 15 seconds
+const CACHE_DURATION_MS = 0; // MUST be 0 because tokens have max_sessions=1 and cannot be reused
 
 // In-memory cache (persists across requests within the same server process)
 let cachedToken: string | null = null;
