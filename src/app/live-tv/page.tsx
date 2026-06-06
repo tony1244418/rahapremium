@@ -265,6 +265,16 @@ function LiveTVContent() {
 
       // Build URL — for DASH/clearkey: append cdntoken= directly (no proxy)
       let url = selectedChannel.streamUrl;
+
+      // Auto-convert DASH to HLS for iOS devices (since iPhone does not support DASH)
+      const isIOS = typeof navigator !== 'undefined' && 
+        (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+      
+      if (isIOS && url.includes('/DASH/') && url.includes('.mpd')) {
+        url = url.replace('/DASH/', '/HLS/').replace('.mpd', '.m3u8');
+        console.log('iOS detected: Converted DASH URL to HLS', url);
+      }
+
       if (cdnToken && !url.includes('cdntoken=') && !url.includes('token=')) {
         const separator = url.includes('?') ? '&' : '?';
         url = `${url}${separator}cdntoken=${cdnToken}`;
