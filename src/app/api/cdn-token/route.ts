@@ -12,24 +12,31 @@ let cachedToken: string | null = null;
 let cacheTimestamp: number = 0;
 
 async function fetchTokenFromRemote(): Promise<string | null> {
-  try {
-    const res = await fetch(CDN_TOKEN_URL, {
-      method: 'POST',
-      cache: 'no-store',
-      headers: { 'Content-Type': 'application/json' },
-      signal: AbortSignal.timeout(10000), // 10s timeout
-    });
+  let attempts = 0;
+  while (attempts < 3) {
+    try {
+      const res = await fetch(CDN_TOKEN_URL, {
+        method: 'POST',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(10000), // 10s timeout
+      });
 
-    if (!res.ok) return null;
-
-    const json = await res.json();
-    if (json?.token && typeof json.token === 'string' && json.token.length > 10) {
-      return json.token;
+      if (res.ok) {
+        const json = await res.json();
+        if (json?.token && typeof json.token === 'string' && json.token.length > 10) {
+          return json.token;
+        }
+      }
+    } catch (e) {
+      // Ignore and retry
     }
-    return null;
-  } catch {
-    return null;
+    attempts++;
+    if (attempts < 3) {
+      await new Promise(resolve => setTimeout(resolve, 500)); // wait 500ms before retry
+    }
   }
+  return null;
 }
 
 export async function GET() {
@@ -96,13 +103,8 @@ export async function GET() {
     return NextResponse.json({ token: remoteToken });
   }
 
-  // Remote fetch failed — fall back to database token if available
-  if (dbToken) {
-    cachedToken = dbToken;
-    cacheTimestamp = now;
-    return NextResponse.json({ token: dbToken });
-  }
-
-  // Final fallback to hardcoded token
-  return NextResponse.json({ token: FALLBACK_TOKEN });
+  // Remote fetch failed completely after retries.
+  // We CANNOT fall back to dbToken if it's an auto-generated token because max_sessions=1.
+  // We MUST fail or return a hardcoded fallback if it exists.
+  return NextResponse.json({ token: FALLBACK_TOKEN }, { status: 500 });
 }
