@@ -275,19 +275,26 @@ function LiveTVContent() {
       const cdnToken = await fetchCdnToken();
       if (cancelled) return;
 
-      // Build URL — for DASH/clearkey: append cdntoken= directly (no proxy)
       let url = selectedChannel.streamUrl;
+
+      const fmt = selectedChannel.streamFormat || '';
+      const isDash = fmt === 'dash' || url.includes('.mpd');
+      const isHls  = fmt === 'hls'  || url.includes('.m3u8');
+      const hasClearKey = selectedChannel.encryptionType === 'clearkey' &&
+        parsedClearKeys && Object.keys(parsedClearKeys).length > 0;
       
-      if (cdnToken) {
+      if (cdnToken && !isHls) {
         // Strip any existing token from the database URL first
         url = url.replace(/([?&])cdntoken=[^&]+(&|$)/, '$1').replace(/[?&]$/, '');
         const separator = url.includes('?') ? '&' : '?';
         url = `${url}${separator}cdntoken=${cdnToken}`;
       } else {
-        // If we couldn't get a token (API failed), still strip the hardcoded one so it doesn't use a dead token
+        // If we couldn't get a token (API failed) or if it's HLS, strip the hardcoded one just in case
         url = url.replace(/([?&])cdntoken=[^&]+(&|$)/, '$1').replace(/[?&]$/, '');
-        onErr('Mtandao upo chini kwa muda. Tumeshindwa kupata token (API Error 500). Tafadhali jaribu tena baada ya sekunde chache.');
-        return; // Stop initialization
+        if (!cdnToken) {
+          onErr('Mtandao upo chini kwa muda. Tumeshindwa kupata token (API Error 500). Tafadhali jaribu tena baada ya sekunde chache.');
+          return; // Stop initialization
+        }
       }
 
       let parsedClearKeys = selectedChannel.clearKeys;
@@ -299,12 +306,6 @@ function LiveTVContent() {
           parsedClearKeys = {};
         }
       }
-
-      const fmt = selectedChannel.streamFormat || '';
-      const isDash = fmt === 'dash' || url.includes('.mpd');
-      const isHls  = fmt === 'hls'  || url.includes('.m3u8');
-      const hasClearKey = selectedChannel.encryptionType === 'clearkey' &&
-        parsedClearKeys && Object.keys(parsedClearKeys).length > 0;
 
       // Attempt to play unmuted first (best user experience)
       // If browser policy blocks it, fallback to muted autoplay
@@ -397,42 +398,12 @@ function LiveTVContent() {
         } catch (err: any) {
           if (!cancelled) onErr(`Player init failed: ${err?.message || err}`);
         }
-
       } else if (isHls) {
         // --- HLS.js ---
         if (Hls.isSupported()) {
-          latestCdnTokenRef.current = cdnToken;
-
-          class CdnTokenLoader {
-            loader: any;
-            constructor(config: any) {
-              this.loader = new Hls.DefaultConfig.loader(config);
-            }
-            abort() { this.loader.abort(); }
-            destroy() { this.loader.destroy(); }
-            load(context: any, config: any, callbacks: any) {
-              if (latestCdnTokenRef.current) {
-                try {
-                  const urlObj = new URL(context.url);
-                  if (urlObj.searchParams.has('cdntoken') || context.url.includes('azamtvltd')) {
-                    urlObj.searchParams.set('cdntoken', latestCdnTokenRef.current);
-                    context.url = urlObj.toString();
-                  }
-                } catch (e) {}
-              }
-              this.loader.load(context, config, callbacks);
-            }
-            get stats() { return this.loader.stats; }
-            get context() { return this.loader.context; }
-          }
-
-
-
           const hls = new Hls({ 
             lowLatencyMode: true, 
-            maxBufferLength: 30,
-            pLoader: CdnTokenLoader as any,
-            fLoader: CdnTokenLoader as any
+            maxBufferLength: 30
           });
 
           inlineHlsRef.current = hls;
