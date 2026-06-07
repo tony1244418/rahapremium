@@ -403,24 +403,29 @@ function LiveTVContent() {
         if (Hls.isSupported()) {
           latestCdnTokenRef.current = cdnToken;
 
-          class CdnTokenLoader extends (Hls.DefaultConfig.loader as any) {
+          class CdnTokenLoader {
+            loader: any;
             constructor(config: any) {
-              super(config);
-              const originalLoad = this.load.bind(this);
-              this.load = (context: any, config: any, callbacks: any) => {
-                if (latestCdnTokenRef.current) {
-                  try {
-                    const urlObj = new URL(context.url);
-                    if (urlObj.searchParams.has('cdntoken') || context.url.includes('azamtvltd')) {
-                      urlObj.searchParams.set('cdntoken', latestCdnTokenRef.current);
-                      context.url = urlObj.toString();
-                    }
-                  } catch (e) {}
-                }
-                originalLoad(context, config, callbacks);
-              };
+              this.loader = new Hls.DefaultConfig.loader(config);
             }
+            abort() { this.loader.abort(); }
+            destroy() { this.loader.destroy(); }
+            load(context: any, config: any, callbacks: any) {
+              if (latestCdnTokenRef.current) {
+                try {
+                  const urlObj = new URL(context.url);
+                  if (urlObj.searchParams.has('cdntoken') || context.url.includes('azamtvltd')) {
+                    urlObj.searchParams.set('cdntoken', latestCdnTokenRef.current);
+                    context.url = urlObj.toString();
+                  }
+                } catch (e) {}
+              }
+              this.loader.load(context, config, callbacks);
+            }
+            get stats() { return this.loader.stats; }
+            get context() { return this.loader.context; }
           }
+
 
 
           const hls = new Hls({ 
