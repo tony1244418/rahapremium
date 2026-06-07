@@ -102,6 +102,15 @@ const nextConfig = {
         ],
       },
       {
+        source: '/_next/static/css/:path*',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'text/css; charset=utf-8',
+          },
+        ],
+      },
+      {
         source: '/sw.js',
         headers: [
           {

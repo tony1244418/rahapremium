@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
   let dbToken: string | null = null;
   let isManual = false;
 
-  // Check database for a manually-set token (admin override)
+  // Check database for a token (either manual or auto-cron)
   try {
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
@@ -83,15 +83,16 @@ export async function GET(req: NextRequest) {
       if (parsedData?.token) {
         dbToken = parsedData.token;
         isManual = parsedData.isManual === true;
+        // Always set lastGoodToken to the DB token as our best fallback
+        lastGoodToken = dbToken;
       }
     }
   } catch (err) {
     console.error('Error fetching CDN token from database:', err);
   }
 
-  // If admin has set a manual token, use it immediately
+  // If admin has set a manual token, use it immediately (do not hit Vercel)
   if (isManual && dbToken) {
-    lastGoodToken = dbToken;
     return NextResponse.json({ token: dbToken });
   }
 

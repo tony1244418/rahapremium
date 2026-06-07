@@ -1,6 +1,6 @@
 // Service Worker for RahaPremium PWA
-// v3 — fixed CORS redirect issue (removed apex '/' from cache list)
-const CACHE_NAME = 'rahapremium-v3';
+// v4 — Force cache invalidation to clear text/plain CSS files
+const CACHE_NAME = 'rahapremium-v4';
 
 // Only cache static assets that don't redirect.
 // Removed '/' because on Hostinger the apex (rahapremium.com) redirects
