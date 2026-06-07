@@ -54,7 +54,7 @@ function LiveTVContent() {
   const latestCdnTokenRef = useRef<string | null>(null);
 
   // Fetch CDN token — reads the manually-set token from DB via server route
-  const fetchCdnToken = async (): Promise<string> => {
+  const fetchCdnToken = useCallback(async (): Promise<string> => {
     try {
       const res = await fetch(`/api/cdn-token?t=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(10000) });
       if (res.ok) {
@@ -65,7 +65,8 @@ function LiveTVContent() {
       }
     } catch { /* ignore */ }
     return '';
-  };
+  }, []);
+
 
   useEffect(() => {
     const unsub = subscribeToLiveChannels((channels) => {
