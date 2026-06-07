@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense, useRef } from 'react';
+import React, { useState, useEffect, Suspense, useRef, useCallback } from 'react';
 
 import MainLayout from '@/components/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
