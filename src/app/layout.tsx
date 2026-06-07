@@ -41,6 +41,10 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
+// Force Next.js to revalidate pages at least every 60 seconds 
+// so Hostinger CDN does not cache HTML pages for a full year.
+export const revalidate = 60;
+
 export default function RootLayout({
   children,
 }: {
