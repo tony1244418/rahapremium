@@ -403,30 +403,33 @@ function LiveTVContent() {
         if (Hls.isSupported()) {
           latestCdnTokenRef.current = cdnToken;
 
-          const customLoader = function (this: any, config: any) {
-            const loader = new Hls.DefaultConfig.loader(config);
-            this.abort = () => loader.abort();
-            this.destroy = () => loader.destroy();
-            this.load = (context: any, config: any, callbacks: any) => {
-              if (latestCdnTokenRef.current) {
-                try {
-                  const urlObj = new URL(context.url);
-                  if (urlObj.searchParams.has('cdntoken') || context.url.includes('azamtvltd')) {
-                    urlObj.searchParams.set('cdntoken', latestCdnTokenRef.current);
-                    context.url = urlObj.toString();
-                  }
-                } catch (e) {}
-              }
-              loader.load(context, config, callbacks);
-            };
-          };
+          class CdnTokenLoader extends (Hls.DefaultConfig.loader as any) {
+            constructor(config: any) {
+              super(config);
+              const originalLoad = this.load.bind(this);
+              this.load = (context: any, config: any, callbacks: any) => {
+                if (latestCdnTokenRef.current) {
+                  try {
+                    const urlObj = new URL(context.url);
+                    if (urlObj.searchParams.has('cdntoken') || context.url.includes('azamtvltd')) {
+                      urlObj.searchParams.set('cdntoken', latestCdnTokenRef.current);
+                      context.url = urlObj.toString();
+                    }
+                  } catch (e) {}
+                }
+                originalLoad(context, config, callbacks);
+              };
+            }
+          }
+
 
           const hls = new Hls({ 
             lowLatencyMode: true, 
             maxBufferLength: 30,
-            pLoader: customLoader as any,
-            fLoader: customLoader as any
+            pLoader: CdnTokenLoader as any,
+            fLoader: CdnTokenLoader as any
           });
+
           inlineHlsRef.current = hls;
           hls.loadSource(url);
           hls.attachMedia(video);

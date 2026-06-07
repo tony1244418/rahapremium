@@ -140,15 +140,11 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
       try {
         // Define custom loader for hls.js to append the latest token dynamically
         // Must be a class (not a plain function) so TypeScript can type `this` correctly
-        class CdnTokenLoader {
-          abort: () => void;
-          destroy: () => void;
-          load: (context: any, loaderConfig: any, callbacks: any) => void;
-          constructor(loaderConfig: any) {
-            const loader = new Hls.DefaultConfig.loader(loaderConfig);
-            this.abort = () => loader.abort();
-            this.destroy = () => loader.destroy();
-            this.load = (context: any, cfg: any, callbacks: any) => {
+        class CdnTokenLoader extends (Hls.DefaultConfig.loader as any) {
+          constructor(config: any) {
+            super(config);
+            const originalLoad = this.load.bind(this);
+            this.load = (context: any, config: any, callbacks: any) => {
               if (latestCdnTokenRef.current) {
                 try {
                   const urlObj = new URL(context.url);
@@ -156,11 +152,12 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
                   context.url = urlObj.toString();
                 } catch (e) {}
               }
-              loader.load(context, cfg, callbacks);
+              originalLoad(context, config, callbacks);
             };
           }
         }
         const customLoader = CdnTokenLoader;
+
 
         // Check for PHP script URLs or URLs with custom ports that might return streams
         const isPhpScript = streamUrl.includes('/live.php') || streamUrl.includes('/play/live.php') || streamUrl.includes('extension=ts') || streamUrl.includes('extension=m3u8');
