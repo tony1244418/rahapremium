@@ -108,12 +108,15 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
     // For HLS, append the CDN token now.
     const isDashStream = channel.streamFormat === 'dash' || channel.streamUrl.includes('.mpd');
     let streamUrl = channel.streamUrl;
-    
-    // Note: User specified that m3u8 streams must not use tokens. 
-    // Tokens are now only injected into DASH/ClearKey streams via Shaka/DashJS request filters.
+    const currentToken = latestCdnTokenRef.current;
+    if (currentToken && !isDashStream) {
+      const separator = streamUrl.includes('?') ? '&' : '?';
+      if (!streamUrl.includes('token=') && !streamUrl.includes('cdntoken=')) {
+        streamUrl = `${streamUrl}${separator}cdntoken=${currentToken}`;
+      }
+    }
 
     const format = channel.streamFormat || 'other';
-
 
     setIsLoading(true);
     setError(null);
@@ -135,8 +138,26 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
 
     const loadStream = async () => {
       try {
-        // Check for PHP script URLs or URLs with custom ports that might return streams
+        // Define custom loader for hls.js to append the latest token dynamically
+        // Must be a class (not a plain function) so TypeScript can type `this` correctly
+        class CdnTokenLoader extends Hls.DefaultConfig.loader {
+          constructor(config: any) {
+            super(config);
+          }
+          load(context: any, config: any, callbacks: any) {
+            if (latestCdnTokenRef.current) {
+              try {
+                const urlObj = new URL(context.url);
+                urlObj.searchParams.set('cdntoken', latestCdnTokenRef.current);
+                context.url = urlObj.toString();
+              } catch (e) {}
+            }
+            super.load(context, config, callbacks);
+          }
+        }
+        const customLoader = CdnTokenLoader;
 
+        // Check for PHP script URLs or URLs with custom ports that might return streams
         const isPhpScript = streamUrl.includes('/live.php') || streamUrl.includes('/play/live.php') || streamUrl.includes('extension=ts') || streamUrl.includes('extension=m3u8');
         const hasCustomPort = /:\d{4,5}\//.test(streamUrl) || /:\d{4,5}$/.test(streamUrl);
         const isTsStream = streamUrl.includes('.ts') || streamUrl.includes('extension=ts');
@@ -168,8 +189,9 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
                 fragLoadingTimeOut: 20000,
                 manifestLoadingTimeOut: 10000,
                 levelLoadingTimeOut: 10000,
+                pLoader: customLoader as any,
+                fLoader: customLoader as any,
                 xhrSetup: (xhr, url) => {
-
                   xhr.withCredentials = false;
                 }
               });
@@ -299,9 +321,10 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
               fragLoadingTimeOut: 20000,
               manifestLoadingTimeOut: 10000,
               levelLoadingTimeOut: 10000,
+              pLoader: customLoader as any,
+              fLoader: customLoader as any,
               // Add CORS and credentials support for PHP scripts and HTTP URLs
               xhrSetup: (xhr, url) => {
-
                 xhr.withCredentials = false;
                 // For HTTP URLs, try to handle CORS
                 if (url.startsWith('http://')) {

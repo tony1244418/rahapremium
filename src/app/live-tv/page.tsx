@@ -402,27 +402,21 @@ function LiveTVContent() {
         if (Hls.isSupported()) {
           latestCdnTokenRef.current = cdnToken;
 
-          class CdnTokenLoader {
-            abort: () => void;
-            destroy: () => void;
-            load: (context: any, loaderConfig: any, callbacks: any) => void;
-            
-            constructor(loaderConfig: any) {
-              const loader = new Hls.DefaultConfig.loader(loaderConfig);
-              this.abort = () => loader.abort();
-              this.destroy = () => loader.destroy();
-              this.load = (context: any, cfg: any, callbacks: any) => {
-                if (latestCdnTokenRef.current) {
-                  try {
-                    const urlObj = new URL(context.url);
-                    if (urlObj.searchParams.has('cdntoken') || context.url.includes('azamtvltd')) {
-                      urlObj.searchParams.set('cdntoken', latestCdnTokenRef.current);
-                      context.url = urlObj.toString();
-                    }
-                  } catch (e) {}
-                }
-                loader.load(context, cfg, callbacks);
-              };
+          class CdnTokenLoader extends Hls.DefaultConfig.loader {
+            constructor(config: any) {
+              super(config);
+            }
+            load(context: any, config: any, callbacks: any) {
+              if (latestCdnTokenRef.current) {
+                try {
+                  const urlObj = new URL(context.url);
+                  if (urlObj.searchParams.has('cdntoken') || context.url.includes('azamtvltd')) {
+                    urlObj.searchParams.set('cdntoken', latestCdnTokenRef.current);
+                    context.url = urlObj.toString();
+                  }
+                } catch (e) {}
+              }
+              super.load(context, config, callbacks);
             }
           }
           const customLoader = CdnTokenLoader;
