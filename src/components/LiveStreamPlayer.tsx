@@ -44,16 +44,14 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
   const latestCdnTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
-
+    if (!isOpen) return;
+    // Fetch token once when player opens
     const fetchToken = async () => {
       try {
         const response = await fetch(`/api/cdn-token?t=${Date.now()}`, { cache: 'no-store' });
         if (response.ok) {
           const data = await response.json();
           latestCdnTokenRef.current = data?.token || '';
-        } else {
-          latestCdnTokenRef.current = '';
         }
       } catch (err) {
         console.error('Error fetching CDN token:', err);
@@ -62,16 +60,10 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
       setIsTokenReady(true);
     };
 
-    if (isOpen) {
-      setIsTokenReady(false);
-      fetchToken();
-      intervalId = setInterval(fetchToken, 2 * 60 * 1000);
-    }
-
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
+    setIsTokenReady(false);
+    fetchToken();
   }, [isOpen]);
+
 
   // Hide bottom navigation when live TV is playing
   useEffect(() => {

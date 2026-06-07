@@ -27,7 +27,20 @@ export default function LiveChannelForm({ isOpen, onClose, onSubmit, editData, l
     if (editData) {
       // Compute linkType from saved data
       let linkType = 'auto';
-      if (editData.encryptionType === 'clearkey') {
+
+      // Parse clearKeys first (may be string from older data or already an object)
+      let parsedClearKeys: Record<string, string> = {};
+      if (editData.clearKeys) {
+        if (typeof editData.clearKeys === 'string') {
+          try { parsedClearKeys = JSON.parse(editData.clearKeys); } catch (e) { /* ignore */ }
+        } else if (typeof editData.clearKeys === 'object') {
+          parsedClearKeys = editData.clearKeys as Record<string, string>;
+        }
+      }
+
+      const hasClearKeys = Object.keys(parsedClearKeys).length > 0;
+
+      if (editData.encryptionType === 'clearkey' || hasClearKeys) {
         linkType = 'drm';
       } else if (editData.streamFormat === 'hls') {
         linkType = 'hls';
@@ -38,8 +51,9 @@ export default function LiveChannelForm({ isOpen, onClose, onSubmit, editData, l
       } else if (editData.videoEmbedCode) {
         linkType = 'embed';
       }
+
       // Extract first KID/Key from clearKeys
-      const clearKeysEntries = Object.entries(editData.clearKeys || {});
+      const clearKeysEntries = Object.entries(parsedClearKeys);
       const drmKid = clearKeysEntries[0]?.[0] || '';
       const drmKey = clearKeysEntries[0]?.[1] || '';
       setFormData({ ...editData, linkType, drmKid, drmKey });

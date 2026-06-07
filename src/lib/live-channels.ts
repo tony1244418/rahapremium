@@ -22,8 +22,15 @@ const mapChannel = (row: any): LiveChannel => ({
   searchKeywords: Array.isArray(row.search_keywords) ? row.search_keywords.filter((kw: string) => kw !== '__slider__') : [],
   createdAt: row.created_at ? new Date(row.created_at) : new Date(),
   updatedAt: row.updated_at ? new Date(row.updated_at) : new Date(),
-  encryptionType: row.encryption_type || undefined,
-  clearKeys: row.clear_keys || undefined,
+  encryptionType: row.encryption_type ?? undefined,
+  clearKeys: (() => {
+    let ck = row.clear_keys;
+    if (typeof ck === 'string') {
+      try { ck = JSON.parse(ck); } catch(e) { return undefined; }
+    }
+    if (ck && typeof ck === 'object' && Object.keys(ck).length > 0) return ck;
+    return undefined;
+  })(),
   contentPurchaseEnabled: row.content_purchase_enabled || false,
   contentPrice: row.content_price || undefined,
   contentPriceDays: row.content_price_days || undefined,

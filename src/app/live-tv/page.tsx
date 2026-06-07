@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, Suspense, useRef, useCallback } from 'react';
+import React, { useState, useEffect, Suspense, useRef } from 'react';
+
 import MainLayout from '@/components/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -52,78 +53,19 @@ function LiveTVContent() {
   const playerContainerRef = useRef<HTMLDivElement>(null);
   const latestCdnTokenRef = useRef<string | null>(null);
 
-  // Fetch CDN token — tries the Vercel API directly first (so the token is bound
-  // to the *browser's* IP, not the server IP). Falls back to our server route.
-  const fetchCdnToken = useCallback(async (): Promise<string> => {
-    const VERCEL_TOKEN_URL = 'https://v0-token-refresh-dashboard.vercel.app/api/token';
-
-    // Helper: call Vercel directly from the browser (token bound to browser IP)
-    const tryDirectVercel = async (): Promise<string> => {
-      try {
-        const res = await fetch(VERCEL_TOKEN_URL, {
-          method: 'POST',
-          cache: 'no-store',
-          headers: { 'Content-Type': 'application/json' },
-          signal: AbortSignal.timeout(8000),
-        });
-        if (res.ok) {
-          const json = await res.json();
-          if (json?.token && typeof json.token === 'string' && json.token.length > 10) {
-            return json.token;
-          }
+  // Fetch CDN token — reads the manually-set token from DB via server route
+  const fetchCdnToken = async (): Promise<string> => {
+    try {
+      const res = await fetch(`/api/cdn-token?t=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(10000) });
+      if (res.ok) {
+        const json = await res.json();
+        if (json?.token && typeof json.token === 'string' && json.token.length > 10) {
+          return json.token;
         }
-      } catch {
-        // CORS or network error — fall through to server route
       }
-      return '';
-    };
-
-    // Helper: call our server route (with retries)
-    const tryServerRoute = async (): Promise<string> => {
-      for (let i = 0; i < 3; i++) {
-        try {
-          const res = await fetch(`/api/cdn-token?t=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(12000) });
-          if (res.ok) {
-            const json = await res.json();
-            if (json?.token && typeof json.token === 'string' && json.token.length > 10) {
-              return json.token;
-            }
-          }
-        } catch {
-          // ignore
-        }
-        if (i < 2) await new Promise(r => setTimeout(r, 600 * (i + 1))); // 600ms, 1200ms
-      }
-      return '';
-    };
-
-    // 1. Try browser-direct first (best: token bound to user's real IP)
-    const directToken = await tryDirectVercel();
-    if (directToken) return directToken;
-
-    // 2. Fall back to server route
-    return tryServerRoute();
-  }, []);
-
-  // Refresh token periodically while playing
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout;
-
-    const updateToken = async () => {
-      const newToken = await fetchCdnToken();
-      if (newToken) {
-        latestCdnTokenRef.current = newToken;
-      }
-    };
-
-    if (selectedChannel) {
-      intervalId = setInterval(updateToken, 2 * 60 * 1000);
-    }
-
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [selectedChannel?.id, fetchCdnToken]);
+    } catch { /* ignore */ }
+    return '';
+  };
 
   useEffect(() => {
     const unsub = subscribeToLiveChannels((channels) => {

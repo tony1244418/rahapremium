@@ -4,6 +4,12 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
+
+  // Allow Cloudflare tunnel and local network access for dev testing on phone
+  allowedDevOrigins: [
+    '*.trycloudflare.com',
+    'trycloudflare.com',
+  ],
   
   // Image optimization settings
   images: {
