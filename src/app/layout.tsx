@@ -9,6 +9,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import PWAInstaller from '@/components/PWAInstaller';
 import { AuthLoading } from '@/components/AuthLoading';
 import MaintenanceGate from '@/components/MaintenanceGate';
+import DevToolsGuard from '@/components/DevToolsGuard';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -102,6 +103,7 @@ export default function RootLayout({
           <LanguageProvider>
             <PlatformControlProvider>
               <AuthProvider>
+                <DevToolsGuard />
                 <AuthLoading />
                 <MaintenanceGate>
                   <div className="min-h-screen bg-main-gradient">

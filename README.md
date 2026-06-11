@@ -398,3 +398,45 @@ Made with passion and care
 ![Visitor Count](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https://github.com/tony1244418/rahaplus&count_bg=%2360a5fa&title_bg=%23933ea&icon=&icon_color=%23FFFFFF&title=Visitors&edge_flat=false)
 
 </div>
+
+## Live TV / CDN Token Service
+
+The Live TV feature mints fresh CDN tokens from an external token service. The
+API key is a **secret** and lives only on the server.
+
+### Environment variables
+
+Add these to `.env.local` (local) and to your host's environment (production).
+They are **server-side only** — do not add a `NEXT_PUBLIC_` prefix, and never
+ship the key in client/mobile code or commit it to a public repo.
+
+```bash
+TOKEN_SERVICE_URL=https://aztv-token-service.onrender.com
+TOKEN_SERVICE_API_KEY=your_token_service_api_key_here
+CDN_HOST=https://cdnedgch2.azamtvltd.co.tz   # optional fallback
+```
+
+### Run
+
+```bash
+npm run dev      # http://localhost:3000
+```
+
+Reference page: `http://localhost:3000/live-tv-demo`
+
+### Server routes
+
+- `GET /api/cdn-token` → `{ token, exp, cdnHost, source }`. Calls the token
+  service with the `X-Api-Key` header, caches for **at most 15s**, responds with
+  `Cache-Control: no-store`. Falls back to the DB token, then a hardcoded token,
+  if the service is unreachable.
+- `GET /api/play/<Channel>` → `{ url, exp }`. Server-side proxy that returns a
+  ready-to-play DASH manifest URL with a fresh token embedded.
+
+### Client rules (implemented in `components/CdnLiveStreamPlayer.tsx`)
+
+- Fetches a fresh token on every channel open: `fetch('/api/cdn-token?t=' + Date.now(), { cache: 'no-store' })`.
+- Stores the live token in a `useRef` (not `useState`) so refreshes don't restart the player.
+- Refreshes the token every 2 minutes via `setInterval`.
+- A Shaka request filter injects the latest token (`cdntoken`) into **every** chunk request.
+- On channel switch / unmount: sets a `cancelled` flag, destroys the Shaka instance, clears the interval.
