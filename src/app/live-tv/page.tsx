@@ -34,6 +34,47 @@ const getCategoryGradient = (cat?: unknown): string => {
   return CATEGORY_COLORS[cat.toLowerCase()] ?? 'from-blue-700 to-slate-800';
 };
 
+// ─── CDN token helpers ───────────────────────────────────────────────────────
+// Channels use one of two token mechanisms on the azamtvltd CDN:
+//   1. Path token:  https://host/tok_<token>/live/eds/<Ch>/DASH/<Ch>.mpd
+//   2. Query token: https://host/live/eds/<Ch>/DASH/<Ch>.mpd?cdntoken=<token>
+// The stored stream_url may carry a STALE token (embedded by an admin or an
+// old cron run). We must always strip the stale token and inject the fresh one
+// using the SAME mechanism the URL was built with — otherwise the CDN 403s.
+
+const hasPathToken = (url: string): boolean => /\/tok_[^/]+\//.test(url);
+
+// Build a playable URL from a base stream URL + a fresh token.
+const buildTokenizedUrl = (rawUrl: string, token: string): string => {
+  if (!token) return rawUrl;
+  if (hasPathToken(rawUrl)) {
+    // Replace the existing (possibly stale) /tok_.../ path segment.
+    return rawUrl.replace(/\/tok_[^/]+\//, `/tok_${token}/`);
+  }
+  // Query-param mechanism: strip any existing cdntoken, then append a fresh one.
+  const stripped = rawUrl.replace(/([?&])cdntoken=[^&]+(&|$)/, '$1').replace(/[?&]$/, '');
+  const sep = stripped.includes('?') ? '&' : '?';
+  return `${stripped}${sep}cdntoken=${token}`;
+};
+
+// Rewrite an in-flight request URI (manifest/segment) with the latest token.
+// Used by the Shaka request filter and the HLS loader so EVERY chunk carries a
+// current token even after the 2-minute refresh.
+const applyTokenToUri = (uri: string, token: string): string => {
+  if (!token || !uri) return uri;
+  if (hasPathToken(uri)) {
+    return uri.replace(/\/tok_[^/]+\//, `/tok_${token}/`);
+  }
+  try {
+    const u = new URL(uri);
+    if (u.searchParams.has('cdntoken') || uri.includes('azamtvltd')) {
+      u.searchParams.set('cdntoken', token);
+      return u.toString();
+    }
+  } catch { /* not a parseable URL — leave untouched */ }
+  return uri;
+};
+
 function LiveTVContent() {
   const { user, loading: authLoading } = useAuth();
   const { t } = useLanguage();
@@ -53,7 +94,8 @@ function LiveTVContent() {
   const playerContainerRef = useRef<HTMLDivElement>(null);
   const latestCdnTokenRef = useRef<string | null>(null);
 
-  // Fetch CDN token — reads the manually-set token from DB via server route
+  // Fetch CDN token — mints a fresh token via the token service (server route
+  // /api/cdn-token keeps the API key secret). Falls back to DB token if needed.
   const fetchCdnToken = useCallback(async (): Promise<string> => {
     try {
       const res = await fetch(`/api/cdn-token?t=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(10000) });
@@ -191,6 +233,9 @@ function LiveTVContent() {
   const inlineShakaRef = useRef<any>(null);
   const inlineHlsRef  = useRef<any>(null);
   const trialTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Periodically refreshes the CDN token while a channel is playing so live
+  // streams don't die when the token expires (HARD RULE: every 2 minutes).
+  const tokenRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [playerError, setPlayerError] = useState<string | null>(null);
   const [playerLoading, setPlayerLoading] = useState(false);
   const [isTrial, setIsTrial] = useState(false);
@@ -227,6 +272,7 @@ function LiveTVContent() {
   // Destroy previous player instances
   const destroyInlinePlayers = useCallback(() => {
     if (trialTimerRef.current) { clearInterval(trialTimerRef.current); trialTimerRef.current = null; }
+    if (tokenRefreshRef.current) { clearInterval(tokenRefreshRef.current); tokenRefreshRef.current = null; }
     if (inlineShakaRef.current) {
       inlineShakaRef.current.destroy().catch(() => {});
       inlineShakaRef.current = null;
@@ -275,20 +321,33 @@ function LiveTVContent() {
       const cdnToken = await fetchCdnToken();
       if (cancelled) return;
 
-      // Build URL — for DASH/clearkey: append cdntoken= directly (no proxy)
+      // Build URL — inject the fresh token using the channel's own mechanism
+      // (path token for /tok_/ URLs, query param otherwise). This strips any
+      // stale token embedded in the stored stream_url.
       let url = selectedChannel.streamUrl;
-      
+
       if (cdnToken) {
-        // Strip any existing token from the database URL first
-        url = url.replace(/([?&])cdntoken=[^&]+(&|$)/, '$1').replace(/[?&]$/, '');
-        const separator = url.includes('?') ? '&' : '?';
-        url = `${url}${separator}cdntoken=${cdnToken}`;
+        url = buildTokenizedUrl(url, cdnToken);
       } else {
-        // If we couldn't get a token (API failed), still strip the hardcoded one so it doesn't use a dead token
-        url = url.replace(/([?&])cdntoken=[^&]+(&|$)/, '$1').replace(/[?&]$/, '');
+        // No token (API failed) — strip any stale token so we don't try a dead one.
+        url = url.replace(/\/tok_[^/]+\//, '/tok_INVALID/')
+                 .replace(/([?&])cdntoken=[^&]+(&|$)/, '$1').replace(/[?&]$/, '');
         onErr('Mtandao upo chini kwa muda. Tumeshindwa kupata token (API Error 500). Tafadhali jaribu tena baada ya sekunde chache.');
         return; // Stop initialization
       }
+
+      // Seed the live token ref and keep it fresh for long-running playback.
+      // HARD RULE: refresh at most every 2 minutes. We only mutate the ref —
+      // never state — so the player keeps playing and the Shaka/HLS request
+      // filters pick up the new token on the next segment request.
+      latestCdnTokenRef.current = cdnToken;
+      if (tokenRefreshRef.current) clearInterval(tokenRefreshRef.current);
+      tokenRefreshRef.current = setInterval(async () => {
+        const fresh = await fetchCdnToken();
+        if (!cancelled && fresh) {
+          latestCdnTokenRef.current = fresh;
+        }
+      }, 2 * 60 * 1000);
 
       let parsedClearKeys = selectedChannel.clearKeys;
       if (typeof parsedClearKeys === 'string') {
@@ -356,16 +415,11 @@ function LiveTVContent() {
           // Ensure ref has initial token
           latestCdnTokenRef.current = cdnToken;
 
-          // Add request filter to append the latest CDN token dynamically
+          // Add request filter to inject the latest CDN token into every request
+          // (manifest + segments), handling both path-token and query-token URLs.
           player.getNetworkingEngine().registerRequestFilter((type: any, request: any) => {
             if (latestCdnTokenRef.current && request.uris && request.uris[0]) {
-              try {
-                const urlObj = new URL(request.uris[0]);
-                if (urlObj.searchParams.has('cdntoken') || request.uris[0].includes('azamtvltd')) {
-                  urlObj.searchParams.set('cdntoken', latestCdnTokenRef.current);
-                  request.uris[0] = urlObj.toString();
-                }
-              } catch (e) {}
+              request.uris[0] = applyTokenToUri(request.uris[0], latestCdnTokenRef.current);
             }
           });
 
@@ -409,13 +463,7 @@ function LiveTVContent() {
             }
             load(context: any, config: any, callbacks: any) {
               if (latestCdnTokenRef.current) {
-                try {
-                  const urlObj = new URL(context.url);
-                  if (urlObj.searchParams.has('cdntoken') || context.url.includes('azamtvltd')) {
-                    urlObj.searchParams.set('cdntoken', latestCdnTokenRef.current);
-                    context.url = urlObj.toString();
-                  }
-                } catch (e) {}
+                context.url = applyTokenToUri(context.url, latestCdnTokenRef.current);
               }
               super.load(context, config, callbacks);
             }
