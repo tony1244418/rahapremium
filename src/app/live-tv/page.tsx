@@ -179,6 +179,18 @@ function LiveTVContent() {
   const TRIAL_COOLDOWN = 24 * 60 * 60 * 1000; // 24 hours in ms
 
   async function handleChannelClick(channel: LiveChannel, source?: 'slider' | 'grid' | 'list') {
+    // Free channel: if no package is selected/required, anyone can watch it
+    // freely — no login, no subscription, no trial.
+    const isFreeChannel = !channel.requiredPackages || channel.requiredPackages.length === 0;
+    if (isFreeChannel) {
+      setIsTrial(false);
+      setTrialSecondsLeft(TRIAL_DURATION);
+      setTrialExpired(false);
+      setClickSource(source || null);
+      setSelectedChannel(channel);
+      return;
+    }
+
     if (!user) {
       router.push(`/auth?redirect=${encodeURIComponent(`/live-tv?channel=${channel.id}`)}`);
       return;
