@@ -34,6 +34,20 @@ import { Game } from '@/types';
 import { Loading } from '@/components/ui/Loading';
 import Link from 'next/link';
 
+// Game-specific vs normal/regular subscription packages.
+const GAME_PACKAGES = ['KITONGA', 'ZEBRA', 'SIMBA', 'SWALA', 'NDOVU', 'FARU', 'TWIGA'];
+const REGULAR_PACKAGES = ['FEDHA', 'CHUMA', 'DHAHABU', 'ALMASI', 'MALKIA'];
+
+// Show the game price only when the game is unlocked exclusively by game
+// packages. If the game also accepts a normal/regular package, the price is
+// hidden (it's covered by a normal subscription).
+const isGamePackageOnly = (requiredPackages?: string[]): boolean => {
+  if (!requiredPackages || requiredPackages.length === 0) return false;
+  const hasGamePkg = requiredPackages.some((p) => GAME_PACKAGES.includes(p));
+  const hasNormalPkg = requiredPackages.some((p) => REGULAR_PACKAGES.includes(p));
+  return hasGamePkg && !hasNormalPkg;
+};
+
 export default function GameDetailPage() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
@@ -520,6 +534,13 @@ export default function GameDetailPage() {
                   <p className="text-xs text-dark-400 mb-3">
                     {t('requiredSubscriptionType')} {game.requiredPackages?.join(' or ')}
                   </p>
+                  {/* Show price only for game-package-only games. If the game
+                      also accepts a normal package, the price is hidden. */}
+                  {isGamePackageOnly(game.requiredPackages) && (
+                    <p className="text-lg font-bold text-yellow-400 mb-3">
+                      TSH {getGamePrice().toLocaleString()}
+                    </p>
+                  )}
                   <button
                     onClick={() => setShowPaymentModal(true)}
                     className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm font-medium transition-colors"
