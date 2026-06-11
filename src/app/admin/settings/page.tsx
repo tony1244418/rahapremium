@@ -386,6 +386,18 @@ export default function AdminSettingsPage() {
         label: 'Live TV Slider',
         description: 'Show a featured channel slider on the Live TV page',
         icon: Radio
+      },
+      {
+        key: 'liveTvAllFree',
+        label: 'All Channels Free',
+        description: 'Make every live channel free to watch (no login or subscription needed)',
+        icon: Radio
+      },
+      {
+        key: 'liveTvFreeTrialForAll',
+        label: 'Free Trial for Everyone',
+        description: 'Give every viewer the Live TV free trial, ignoring the 24-hour cooldown',
+        icon: Sparkles
       }
     ],
     []

@@ -179,10 +179,10 @@ function LiveTVContent() {
   const TRIAL_COOLDOWN = 24 * 60 * 60 * 1000; // 24 hours in ms
 
   async function handleChannelClick(channel: LiveChannel, source?: 'slider' | 'grid' | 'list') {
-    // Free channel: if no package is selected/required, anyone can watch it
-    // freely — no login, no subscription, no trial.
+    // Free channel: if no package is required, OR the admin enabled "All Channels
+    // Free", anyone can watch it freely — no login, no subscription, no trial.
     const isFreeChannel = !channel.requiredPackages || channel.requiredPackages.length === 0;
-    if (isFreeChannel) {
+    if (isFreeChannel || toggles.liveTvAllFree) {
       setIsTrial(false);
       setTrialSecondsLeft(TRIAL_DURATION);
       setTrialExpired(false);
@@ -201,6 +201,16 @@ function LiveTVContent() {
     const hasAccess = userHasAnyPackage && hasAccessToContent(user, channel.requiredPackages);
 
     if (!hasAccess) {
+      // If the admin enabled "Free Trial for Everyone", grant the trial without
+      // the 24-hour cooldown check.
+      if (toggles.liveTvFreeTrialForAll) {
+        setIsTrial(true);
+        setTrialSecondsLeft(TRIAL_DURATION);
+        setTrialExpired(false);
+        setClickSource(source || null);
+        setSelectedChannel(channel);
+        return;
+      }
       // Premium channel — check server-side trial eligibility
       try {
         const res = await fetch(`/api/live-trial?userId=${user.uid}`);

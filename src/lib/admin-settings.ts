@@ -142,7 +142,9 @@ export type AdminToggleKey =
   | 'autoContentSync'
   | 'feedbackEnabled'
   | 'feedbackIconVisible'
-  | 'liveTvSliderEnabled';
+  | 'liveTvSliderEnabled'
+  | 'liveTvAllFree'
+  | 'liveTvFreeTrialForAll';
 
 export type AdminToggleSettings = Record<AdminToggleKey, boolean>;
 
@@ -164,7 +166,10 @@ export const DEFAULT_ADMIN_TOGGLE_SETTINGS: AdminToggleSettings = {
   autoContentSync: false,
   feedbackEnabled: true,
   feedbackIconVisible: true,
-  liveTvSliderEnabled: false
+  liveTvSliderEnabled: false,
+  // Live TV global access switches — OFF by default (no behaviour change).
+  liveTvAllFree: false,
+  liveTvFreeTrialForAll: false
 };
 
 export const getAdminToggleSettings = async (): Promise<AdminToggleSettingsWithMetadata> => {
