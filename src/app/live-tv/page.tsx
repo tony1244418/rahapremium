@@ -912,7 +912,9 @@ function LiveTVContent() {
             }`}
           >
             {activeChannels.map((channel, index) => {
-              const hasAccess = hasAccessToContent(user, channel.requiredPackages);
+              // When "All Channels Free" is ON, no channel is locked.
+              const isFreeChannel = !channel.requiredPackages || channel.requiredPackages.length === 0;
+              const hasAccess = toggles.liveTvAllFree || isFreeChannel || hasAccessToContent(user, channel.requiredPackages);
               const gradient = getCategoryGradient(channel.category);
 
               if (viewMode === 'list') {
