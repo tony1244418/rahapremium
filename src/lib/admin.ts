@@ -7,7 +7,8 @@ import {
   PaymentRequest,
   AdminUser,
   UserSubscription,
-  SubscriptionPackage
+  SubscriptionPackage,
+  PackageCategory
 } from '@/types';
 import { processSubscription, completePayment, failPayment } from './subscriptions';
 
@@ -51,6 +52,8 @@ const mapUserFromDB = (data: any): User => {
     subscriptionHistory: data.subscription_history || [],
     paymentHistory: data.payment_history || [],
     contentAccesses: data.content_accesses || [],
+    liveTvSubscription: data.live_tv_subscription || null,
+    liveTvSubscriptionHistory: data.live_tv_subscription_history || [],
   };
 };
 
@@ -191,40 +194,49 @@ export const addManualSubscription = async (
 export const addDirectSubscription = async (
   userId: string,
   packageType: SubscriptionPackage,
-  adminId: string
+  adminId: string,
+  category: PackageCategory = 'GENERAL'
 ): Promise<void> => {
   try {
     const user = await getUserById(userId);
     if (!user) throw new Error('User not found');
 
+    const isLiveTv = category === 'LIVETV';
+
     // Use DB-backed package config (admin may have customised days/price)
-    const { getPackagesConfig, calculateSubscriptionEndDate, isUpgrade } = await import('./subscriptions');
-    const packagesConfig = await getPackagesConfig();
+    const { getPackagesConfig, getLiveTvPackagesConfig, isUpgrade } = await import('./subscriptions');
+    const packagesConfig = isLiveTv ? await getLiveTvPackagesConfig() : await getPackagesConfig();
     const packageConfig = packagesConfig[packageType];
     if (!packageConfig) throw new Error(`Unknown package type: ${packageType}`);
     const now = new Date();
 
-    const isRenewal = user.subscription && user.subscription.packageType === packageType && user.subscription.isActive;
-    const isUpgradeTransaction = user.subscription && user.subscription.isActive && isUpgrade(user.subscription.packageType, packageType);
+    // Operate on the subscription belonging to this category only.
+    const currentSub = isLiveTv ? user.liveTvSubscription : user.subscription;
+    const currentHistory = isLiveTv
+      ? (user.liveTvSubscriptionHistory || [])
+      : (user.subscriptionHistory || []);
+
+    const isRenewal = currentSub && currentSub.packageType === packageType && currentSub.isActive;
+    const isUpgradeTransaction = currentSub && currentSub.isActive && isUpgrade(currentSub.packageType, packageType);
 
     let endDate: Date;
     let isRenewalFlag = false;
     let isUpgradeFlag = false;
 
-    if (isRenewal && user.subscription && user.subscription.isActive) {
-      const currentEndDate = new Date(user.subscription.endDate);
+    if (isRenewal && currentSub && currentSub.isActive) {
+      const currentEndDate = new Date(currentSub.endDate);
       endDate = new Date(currentEndDate.getTime() + (packageConfig.days * 24 * 60 * 60 * 1000));
       isRenewalFlag = true;
-    } else if (isUpgradeTransaction && user.subscription) {
-      const currentEndDate = new Date(user.subscription.endDate);
+    } else if (isUpgradeTransaction && currentSub) {
+      const currentEndDate = new Date(currentSub.endDate);
       endDate = new Date(currentEndDate.getTime() + (packageConfig.days * 24 * 60 * 60 * 1000));
       isUpgradeFlag = true;
-    } else if (user.subscription && user.subscription.isActive) {
-      const remainingTime = new Date(user.subscription.endDate).getTime() - now.getTime();
+    } else if (currentSub && currentSub.isActive) {
+      const remainingTime = new Date(currentSub.endDate).getTime() - now.getTime();
       const newPackageTime = packageConfig.days * 24 * 60 * 60 * 1000;
       endDate = new Date(now.getTime() + remainingTime + newPackageTime);
     } else {
-      endDate = calculateSubscriptionEndDate(user, packageType, false, packageConfig);
+      endDate = new Date(now.getTime() + (packageConfig.days * 24 * 60 * 60 * 1000));
     }
 
     // Insert a payment record so this subscription is auditable
@@ -233,6 +245,7 @@ export const addDirectSubscription = async (
       id: crypto.randomUUID(),
       user_id: userId,
       package_type: packageType,
+      package_category: category,
       amount: 0,
       phone_number: user.phoneNumber || '',
       status: 'completed',
@@ -260,30 +273,38 @@ export const addDirectSubscription = async (
       amount: 0,
       isRenewal: isRenewalFlag,
       isUpgrade: isUpgradeFlag,
-      previousPackage: user.subscription?.packageType || null,
+      previousPackage: currentSub?.packageType || null,
       createdAt: now,
-      addedBy: adminId
+      addedBy: adminId,
+      category
     };
 
-    const updatedSubscriptionHistory = [...(user.subscriptionHistory || []), newSubscription];
-    if (user.subscription) {
+    const updatedSubscriptionHistory = [...currentHistory, newSubscription];
+    if (currentSub) {
       const updatedHistory = updatedSubscriptionHistory.map(sub =>
-        sub.id === user.subscription?.id ? { ...sub, isActive: false } : sub
+        sub.id === currentSub.id ? { ...sub, isActive: false } : sub
       );
       updatedSubscriptionHistory.splice(0, updatedSubscriptionHistory.length, ...updatedHistory);
     }
 
-    const { error: updateError } = await supabase.from('rahapremium_users').update({
-      subscription: JSON.parse(JSON.stringify(newSubscription)),
-      subscription_history: JSON.parse(JSON.stringify(updatedSubscriptionHistory))
-    }).eq('id', userId);
+    const updatePayload = isLiveTv
+      ? {
+          live_tv_subscription: JSON.parse(JSON.stringify(newSubscription)),
+          live_tv_subscription_history: JSON.parse(JSON.stringify(updatedSubscriptionHistory))
+        }
+      : {
+          subscription: JSON.parse(JSON.stringify(newSubscription)),
+          subscription_history: JSON.parse(JSON.stringify(updatedSubscriptionHistory))
+        };
+
+    const { error: updateError } = await supabase.from('rahapremium_users').update(updatePayload).eq('id', userId);
 
     if (updateError) {
       console.error('Supabase update error in addDirectSubscription:', updateError);
       throw new Error(`Failed to update user subscription: ${updateError.message}`);
     }
 
-    console.log(`✅ Manual subscription added for user ${userId}: ${packageType} until ${endDate.toISOString()}`);
+    console.log(`✅ Manual ${category} subscription added for user ${userId}: ${packageType} until ${endDate.toISOString()}`);
   } catch (error) {
     console.error('Error adding direct subscription:', error);
     throw error;

@@ -27,10 +27,10 @@ import {
   addDirectSubscription,
   removeUserSubscription
 } from '@/lib/admin';
-import { User, SubscriptionPackage } from '@/types';
+import { User, SubscriptionPackage, PackageCategory } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import LiveTimer from '@/components/ui/LiveTimer';
-import { getUserSubscriptionStatus, SUBSCRIPTION_PACKAGES, getPackagesConfig, PackagesConfigMap } from '@/lib/subscriptions';
+import { getUserSubscriptionStatus, SUBSCRIPTION_PACKAGES, getPackagesConfig, getLiveTvPackagesConfig, LIVETV_SUBSCRIPTION_PACKAGES, PackagesConfigMap } from '@/lib/subscriptions';
 import { Loading } from '@/components/ui/Loading';
 
 export default function AdminUsersPage() {
@@ -45,11 +45,14 @@ export default function AdminUsersPage() {
   const [showUserModal, setShowUserModal] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<SubscriptionPackage>('FEDHA');
+  const [selectedSubCategory, setSelectedSubCategory] = useState<PackageCategory>('GENERAL');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [packagesConfig, setPackagesConfig] = useState<PackagesConfigMap | null>(null);
+  const [liveTvPackagesConfig, setLiveTvPackagesConfig] = useState<PackagesConfigMap | null>(null);
 
   useEffect(() => {
     getPackagesConfig().then(config => setPackagesConfig(config)).catch(() => setPackagesConfig(SUBSCRIPTION_PACKAGES));
+    getLiveTvPackagesConfig().then(config => setLiveTvPackagesConfig(config)).catch(() => setLiveTvPackagesConfig(LIVETV_SUBSCRIPTION_PACKAGES));
   }, []);
 
   useEffect(() => {
@@ -151,10 +154,10 @@ export default function AdminUsersPage() {
   const handleAddSubscription = async () => {
     if (!selectedUser || !adminUser) return;
 
-    console.log('🎯 ADMIN PANEL: Adding subscription via + button for user:', selectedUser.uid, 'package:', selectedPackage);
+    console.log('🎯 ADMIN PANEL: Adding subscription via + button for user:', selectedUser.uid, 'package:', selectedPackage, 'category:', selectedSubCategory);
     setActionLoading('subscription');
     try {
-      await addDirectSubscription(selectedUser.uid, selectedPackage, adminUser.uid);
+      await addDirectSubscription(selectedUser.uid, selectedPackage, adminUser.uid, selectedSubCategory);
       setShowSubscriptionModal(false);
       setSelectedUser(null);
       
@@ -561,24 +564,50 @@ export default function AdminUsersPage() {
                 </div>
 
                 <div>
+                  <label className="form-label">Subscription Type</label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedSubCategory('GENERAL'); setSelectedPackage('FEDHA'); }}
+                      className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedSubCategory === 'GENERAL' ? 'bg-primary-500 text-white' : 'bg-dark-800 text-dark-300'}`}
+                    >
+                      Normal / Movies
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedSubCategory('LIVETV'); setSelectedPackage('FEDHA'); }}
+                      className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedSubCategory === 'LIVETV' ? 'bg-emerald-500 text-white' : 'bg-dark-800 text-dark-300'}`}
+                    >
+                      Live TV
+                    </button>
+                  </div>
+                </div>
+
+                <div>
                   <label className="form-label">Subscription Package</label>
                   <select
                     value={selectedPackage}
                     onChange={(e) => setSelectedPackage(e.target.value as SubscriptionPackage)}
                     className="form-input"
                   >
-                    {Object.entries(packagesConfig || SUBSCRIPTION_PACKAGES).map(([key, pkg]) => (
-                      <option key={key} value={key}>
-                        {pkg.name} - {pkg.days} days - TSH {pkg.price.toLocaleString()}
-                      </option>
-                    ))}
+                    {Object.entries(
+                      selectedSubCategory === 'LIVETV'
+                        ? (liveTvPackagesConfig || LIVETV_SUBSCRIPTION_PACKAGES)
+                        : (packagesConfig || SUBSCRIPTION_PACKAGES)
+                    )
+                      .filter(([key]) => selectedSubCategory !== 'LIVETV' || ['FEDHA','CHUMA','DHAHABU','ALMASI','MALKIA'].includes(key))
+                      .map(([key, pkg]) => (
+                        <option key={key} value={key}>
+                          {pkg.name} - {pkg.days} days - TSH {pkg.price.toLocaleString()}
+                        </option>
+                      ))}
                   </select>
                 </div>
 
-                <div className="p-4 bg-blue-500/20 border border-blue-500/50 rounded-lg">
-                  <p className="text-blue-400 text-sm">
-                    This will add a manual subscription for the selected package. 
-                    The subscription will be activated immediately and will be marked as admin-added.
+                <div className={`p-4 rounded-lg border ${selectedSubCategory === 'LIVETV' ? 'bg-emerald-500/20 border-emerald-500/50' : 'bg-blue-500/20 border-blue-500/50'}`}>
+                  <p className={`text-sm ${selectedSubCategory === 'LIVETV' ? 'text-emerald-300' : 'text-blue-400'}`}>
+                    This will add a manual {selectedSubCategory === 'LIVETV' ? 'Live TV' : 'normal/movies'} subscription for the selected package.
+                    It activates immediately and is marked as admin-added.
                   </p>
                 </div>
               </div>
