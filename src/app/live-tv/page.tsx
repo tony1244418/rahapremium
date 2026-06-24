@@ -217,7 +217,7 @@ function LiveTVContent() {
         
         if (!data.canTrial) {
           // Trial already used recently — show subscribe page
-          router.push(`/subscriptions?redirect=${encodeURIComponent(`/live-tv?channel=${channel.id}`)}`);
+          router.push(`/subscriptions?type=livetv&redirect=${encodeURIComponent(`/live-tv?channel=${channel.id}`)}`);
           return;
         }
 
@@ -237,7 +237,7 @@ function LiveTVContent() {
       } catch (err) {
         console.error('Error fetching trial status:', err);
         // Fallback to strict access if API fails
-        router.push(`/subscriptions?redirect=${encodeURIComponent(`/live-tv?channel=${channel.id}`)}`);
+        router.push(`/subscriptions?type=livetv&redirect=${encodeURIComponent(`/live-tv?channel=${channel.id}`)}`);
         return;
       }
     } else {
@@ -601,7 +601,7 @@ function LiveTVContent() {
                         Your 30-second free trial is over. Subscribe to keep watching {selectedChannel.name}.
                       </p>
                       <button
-                        onClick={() => router.push(`/subscriptions?redirect=${encodeURIComponent(`/live-tv?channel=${selectedChannel.id}`)}`)}
+                        onClick={() => router.push(`/subscriptions?type=livetv&redirect=${encodeURIComponent(`/live-tv?channel=${selectedChannel.id}`)}`)}
                         className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-2xl text-sm font-bold text-white transition-all duration-200 shadow-lg shadow-blue-600/30 mb-3"
                       >
                         Subscribe Now

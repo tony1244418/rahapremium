@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import MainLayout from '@/components/MainLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { 
@@ -36,6 +36,7 @@ import LiveTimer from '@/components/ui/LiveTimer';
 
 export default function SubscriptionsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, refreshUserData, signInWithPhone } = useAuth();
   const { t } = useLanguage();
   const [selectedPackage, setSelectedPackage] = useState<SubscriptionPackage | null>(null);
@@ -402,6 +403,11 @@ export default function SubscriptionsPage() {
     : (packagesConfig || SUBSCRIPTION_PACKAGES));
   const selectedCategoryLabel = selectedCategory === 'LIVETV' ? 'Live TV' : '';
 
+  // Which package list to show, based on where the user came from.
+  // ?type=livetv  -> show only Live TV packages (e.g. from the Live TV page)
+  // anything else -> show only the normal/movie packages (default)
+  const viewCategory: PackageCategory = searchParams?.get('type') === 'livetv' ? 'LIVETV' : 'GENERAL';
+
   return (
     <ProtectedRoute>
       <MainLayout>
@@ -418,7 +424,7 @@ export default function SubscriptionsPage() {
 
 
           {/* Current Subscription Status */}
-          {subscriptionStatus.isActive && (
+          {viewCategory === 'GENERAL' && subscriptionStatus.isActive && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -475,6 +481,7 @@ export default function SubscriptionsPage() {
           )}
 
           {/* Subscription Packages */}
+          {viewCategory === 'GENERAL' && (
           <div className="space-y-4">
             {/* Loading skeletons while config is being fetched */}
             {!packagesConfig && packageOrder.map((_, i) => (
@@ -551,9 +558,10 @@ export default function SubscriptionsPage() {
               );
             })}
           </div>
+          )}
 
           {/* Live TV Subscription Status */}
-          {liveTvSubscriptionStatus.isActive && (
+          {viewCategory === 'LIVETV' && liveTvSubscriptionStatus.isActive && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -592,6 +600,7 @@ export default function SubscriptionsPage() {
           )}
 
           {/* Live TV Packages */}
+          {viewCategory === 'LIVETV' && (
           <div className="space-y-4">
             <div className="flex items-center space-x-2 pt-2">
               <Tv size={22} className="text-emerald-400" />
@@ -667,6 +676,7 @@ export default function SubscriptionsPage() {
               );
             })}
           </div>
+          )}
 
           {/* Payment History Link */}
           <div className="text-center pt-6 space-y-3">
