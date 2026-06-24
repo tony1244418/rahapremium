@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Image from 'next/image';
 import MainLayout from '@/components/MainLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -35,6 +35,14 @@ import { motion } from 'framer-motion';
 import LiveTimer from '@/components/ui/LiveTimer';
 
 export default function SubscriptionsPage() {
+  return (
+    <Suspense fallback={null}>
+      <SubscriptionsContent />
+    </Suspense>
+  );
+}
+
+function SubscriptionsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, refreshUserData, signInWithPhone } = useAuth();
