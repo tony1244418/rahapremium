@@ -79,12 +79,27 @@ export default function AdminUsersPage() {
 
     // Search filter
     if (searchQuery.trim()) {
-      const searchTerm = searchQuery.toLowerCase();
-      filtered = filtered.filter(user =>
-        user.displayName.toLowerCase().includes(searchTerm) ||
-        user.username.toLowerCase().includes(searchTerm) ||
-        user.phoneNumber.includes(searchTerm)
-      );
+      const searchTerm = searchQuery.toLowerCase().trim();
+      // Normalize a phone to its national significant number (drop +255 / leading 0)
+      const normalizePhone = (p: string) => {
+        let d = (p || '').replace(/\D/g, '');
+        if (d.startsWith('255')) d = d.slice(3);
+        else if (d.startsWith('0')) d = d.slice(1);
+        return d;
+      };
+      const searchDigits = searchTerm.replace(/\D/g, '');
+      filtered = filtered.filter(user => {
+        const nameMatch =
+          user.displayName.toLowerCase().includes(searchTerm) ||
+          user.username.toLowerCase().includes(searchTerm);
+        const phoneMatch =
+          searchDigits.length > 0 &&
+          (
+            (user.phoneNumber || '').includes(searchTerm) ||
+            normalizePhone(user.phoneNumber).includes(normalizePhone(searchDigits))
+          );
+        return nameMatch || phoneMatch;
+      });
     }
 
     // Status filter
