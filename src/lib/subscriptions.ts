@@ -4,7 +4,8 @@ import {
   UserSubscription,
   SubscriptionPackage,
   PaymentRequest,
-  PaymentStatus
+  PaymentStatus,
+  PackageCategory
 } from '@/types';
 
 export interface PackageConfig {
@@ -33,9 +34,37 @@ export const SUBSCRIPTION_PACKAGES: PackagesConfigMap = {
   TWIGA: { days: 0, price: 30000, name: 'TWIGA' }
 };
 
-export const getPackagesConfig = async (): Promise<PackagesConfigMap> => {
+// Default Live TV packages configuration.
+// Starts as an exact copy of the regular (non-game) packages, but is stored
+// and edited independently from the general/movie packages.
+export const LIVETV_SUBSCRIPTION_PACKAGES: PackagesConfigMap = {
+  FEDHA: { days: 3, price: 5000, name: 'FEDHA' },
+  CHUMA: { days: 7, price: 8000, name: 'CHUMA' },
+  DHAHABU: { days: 14, price: 15000, name: 'DHAHABU' },
+  ALMASI: { days: 30, price: 25000, name: 'ALMASI' },
+  MALKIA: { days: 180, price: 120000, name: 'MALKIA' },
+  // Game packages are not part of the Live TV set; kept for type completeness.
+  KITONGA: { days: 0, price: 1000, name: 'KITONGA' },
+  SWALA: { days: 0, price: 5000, name: 'SWALA' },
+  ZEBRA: { days: 0, price: 8000, name: 'ZEBRA' },
+  SIMBA: { days: 0, price: 9000, name: 'SIMBA' },
+  NDOVU: { days: 0, price: 15000, name: 'NDOVU' },
+  FARU: { days: 0, price: 20000, name: 'FARU' },
+  TWIGA: { days: 0, price: 30000, name: 'TWIGA' }
+};
+
+// admin_settings row keys for each package set. These are intentionally
+// distinct so editing one set never reads from or writes to the other.
+export const PACKAGES_SETTINGS_KEY = 'packages';
+export const LIVETV_PACKAGES_SETTINGS_KEY = 'packages_livetv';
+
+// Key-based config reader shared by the general and Live TV sets.
+const getPackagesConfigByKey = async (
+  settingsKey: string,
+  defaults: PackagesConfigMap
+): Promise<PackagesConfigMap> => {
   try {
-    const { data, error } = await supabase.from('admin_settings').select('data').eq('id', 'packages').single();
+    const { data, error } = await supabase.from('admin_settings').select('data').eq('id', settingsKey).single();
     if (!error && data?.data) {
       const parsedData = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
       const cleanData: Partial<PackagesConfigMap> = {};
@@ -44,17 +73,23 @@ export const getPackagesConfig = async (): Promise<PackagesConfigMap> => {
           cleanData[key as SubscriptionPackage] = parsedData[key];
         }
       }
-      return { ...SUBSCRIPTION_PACKAGES, ...cleanData } as PackagesConfigMap;
+      return { ...defaults, ...cleanData } as PackagesConfigMap;
     }
   } catch (error) {
-    console.error('Error fetching packages config:', error);
+    console.error(`Error fetching packages config (${settingsKey}):`, error);
   }
-  return SUBSCRIPTION_PACKAGES;
+  return defaults;
 };
 
-export const updatePackageConfig = async (packageType: SubscriptionPackage, updates: Partial<PackageConfig>) => {
-  const currentConfig = await getPackagesConfig();
-  
+// Key-based config writer shared by the general and Live TV sets.
+const updatePackageConfigByKey = async (
+  settingsKey: string,
+  defaults: PackagesConfigMap,
+  packageType: SubscriptionPackage,
+  updates: Partial<PackageConfig>
+): Promise<PackagesConfigMap> => {
+  const currentConfig = await getPackagesConfigByKey(settingsKey, defaults);
+
   const updatedConfig = {
     ...currentConfig,
     [packageType]: {
@@ -62,22 +97,39 @@ export const updatePackageConfig = async (packageType: SubscriptionPackage, upda
       ...updates
     }
   };
-  
+
   const cleanConfig: Partial<PackagesConfigMap> = {};
   for (const key of Object.keys(updatedConfig)) {
     if (isNaN(Number(key))) {
       cleanConfig[key as SubscriptionPackage] = updatedConfig[key as SubscriptionPackage];
     }
   }
-  
+
   const { error } = await supabase
     .from('admin_settings')
     .upsert(
-      { id: 'packages', data: cleanConfig, updated_at: new Date().toISOString(), updated_by: 'admin' },
+      { id: settingsKey, data: cleanConfig, updated_at: new Date().toISOString(), updated_by: 'admin' },
       { onConflict: 'id' }
     );
   if (error) throw error;
   return cleanConfig as PackagesConfigMap;
+};
+
+export const getPackagesConfig = async (): Promise<PackagesConfigMap> => {
+  return getPackagesConfigByKey(PACKAGES_SETTINGS_KEY, SUBSCRIPTION_PACKAGES);
+};
+
+export const updatePackageConfig = async (packageType: SubscriptionPackage, updates: Partial<PackageConfig>) => {
+  return updatePackageConfigByKey(PACKAGES_SETTINGS_KEY, SUBSCRIPTION_PACKAGES, packageType, updates);
+};
+
+// Live TV package set accessors — stored separately under packages_livetv.
+export const getLiveTvPackagesConfig = async (): Promise<PackagesConfigMap> => {
+  return getPackagesConfigByKey(LIVETV_PACKAGES_SETTINGS_KEY, LIVETV_SUBSCRIPTION_PACKAGES);
+};
+
+export const updateLiveTvPackageConfig = async (packageType: SubscriptionPackage, updates: Partial<PackageConfig>) => {
+  return updatePackageConfigByKey(LIVETV_PACKAGES_SETTINGS_KEY, LIVETV_SUBSCRIPTION_PACKAGES, packageType, updates);
 };
 
 export const getPackageHierarchy = (): SubscriptionPackage[] => {
@@ -138,35 +190,43 @@ export const processSubscription = async (
   paymentId: string,
   isManuallyCompleted: boolean = false,
   completedBy?: string,
-  customSupabaseClient?: any
+  customSupabaseClient?: any,
+  category: PackageCategory = 'GENERAL'
 ): Promise<UserSubscription> => {
-  const packagesConfig = await getPackagesConfig();
+  const isLiveTv = category === 'LIVETV';
+  const packagesConfig = isLiveTv ? await getLiveTvPackagesConfig() : await getPackagesConfig();
   const packageConfig = packagesConfig[packageType];
   const now = new Date();
 
-  const isRenewal = user.subscription &&
-    user.subscription.packageType === packageType &&
-    user.subscription.isActive;
+  // Operate on the subscription belonging to this category only.
+  const currentSub = isLiveTv ? user.liveTvSubscription : user.subscription;
+  const currentHistory = isLiveTv
+    ? (user.liveTvSubscriptionHistory || [])
+    : (user.subscriptionHistory || []);
 
-  const isUpgradeTransaction = user.subscription &&
-    user.subscription.isActive &&
-    isUpgrade(user.subscription.packageType, packageType);
+  const isRenewal = currentSub &&
+    currentSub.packageType === packageType &&
+    currentSub.isActive;
+
+  const isUpgradeTransaction = currentSub &&
+    currentSub.isActive &&
+    isUpgrade(currentSub.packageType, packageType);
 
   let endDate: Date;
   let amount = packageConfig.price;
 
-  if (isRenewal && user.subscription && user.subscription.isActive) {
-    const currentEndDate = new Date(user.subscription.endDate);
+  if (isRenewal && currentSub && currentSub.isActive) {
+    const currentEndDate = new Date(currentSub.endDate);
     endDate = new Date(currentEndDate.getTime() + (packageConfig.days * 24 * 60 * 60 * 1000));
-  } else if (isUpgradeTransaction && user.subscription) {
-    const currentEndDate = new Date(user.subscription.endDate);
+  } else if (isUpgradeTransaction && currentSub) {
+    const currentEndDate = new Date(currentSub.endDate);
     endDate = new Date(currentEndDate.getTime() + (packageConfig.days * 24 * 60 * 60 * 1000));
-  } else if (user.subscription && user.subscription.isActive) {
-    const remainingTime = new Date(user.subscription.endDate).getTime() - now.getTime();
+  } else if (currentSub && currentSub.isActive) {
+    const remainingTime = new Date(currentSub.endDate).getTime() - now.getTime();
     const newPackageTime = packageConfig.days * 24 * 60 * 60 * 1000;
     endDate = new Date(now.getTime() + remainingTime + newPackageTime);
   } else {
-    endDate = calculateSubscriptionEndDate(user, packageType, false, packageConfig);
+    endDate = new Date(now.getTime() + (packageConfig.days * 24 * 60 * 60 * 1000));
   }
 
   const newSubscription: UserSubscription = {
@@ -179,24 +239,30 @@ export const processSubscription = async (
     amount,
     isRenewal: !!isRenewal,
     isUpgrade: !!isUpgradeTransaction,
-    previousPackage: user.subscription?.packageType || null,
-    createdAt: now
+    previousPackage: currentSub?.packageType || null,
+    createdAt: now,
+    category
   };
 
-  const updatedSubscriptionHistory = [...(user.subscriptionHistory || []), newSubscription];
-  if (user.subscription) {
+  const updatedSubscriptionHistory = [...currentHistory, newSubscription];
+  if (currentSub) {
     const updatedHistory = updatedSubscriptionHistory.map(sub =>
-      sub.id === user.subscription?.id ? { ...sub, isActive: false } : sub
+      sub.id === currentSub.id ? { ...sub, isActive: false } : sub
     );
     updatedSubscriptionHistory.splice(0, updatedSubscriptionHistory.length, ...updatedHistory);
   }
 
   const client = customSupabaseClient || supabase;
-  // Use JSON casting for JSONB columns on Supabase when stringifying dates
-  await client.from('rahapremium_users').update({
-    subscription: JSON.parse(JSON.stringify(newSubscription)),
-    subscription_history: JSON.parse(JSON.stringify(updatedSubscriptionHistory))
-  }).eq('id', user.uid);
+  const updatePayload = isLiveTv
+    ? {
+        live_tv_subscription: JSON.parse(JSON.stringify(newSubscription)),
+        live_tv_subscription_history: JSON.parse(JSON.stringify(updatedSubscriptionHistory))
+      }
+    : {
+        subscription: JSON.parse(JSON.stringify(newSubscription)),
+        subscription_history: JSON.parse(JSON.stringify(updatedSubscriptionHistory))
+      };
+  await client.from('rahapremium_users').update(updatePayload).eq('id', user.uid);
 
   return newSubscription;
 };
@@ -240,6 +306,48 @@ export const hasAccessToContent = (
   }
 
   return requiredPackages.includes(user.subscription.packageType);
+};
+
+// During the transition window, an active general subscription also grants
+// Live TV access. Turn this OFF after the transition period so that Live TV
+// requires its own subscription.
+export const LIVETV_TRANSITION_COURTESY = true;
+
+const isSubscriptionActiveNow = (sub?: UserSubscription | null): boolean => {
+  if (!sub || !sub.isActive) return false;
+  return new Date(sub.endDate) > new Date();
+};
+
+/**
+ * Access check for Live TV channels. Uses the user's independent Live TV
+ * subscription. Free channels (no required packages) are always accessible.
+ * During the transition window, an active general subscription also grants
+ * access (see LIVETV_TRANSITION_COURTESY).
+ */
+export const hasLiveTvAccess = (
+  user: User | null,
+  requiredPackages: SubscriptionPackage[]
+): boolean => {
+  // Free channel — open to all
+  if (!requiredPackages || requiredPackages.length === 0) {
+    return true;
+  }
+
+  if (!user) return false;
+
+  // Primary: active Live TV subscription covering the required package
+  if (isSubscriptionActiveNow(user.liveTvSubscription)) {
+    if (requiredPackages.includes(user.liveTvSubscription!.packageType)) {
+      return true;
+    }
+  }
+
+  // Transition courtesy: active general subscription unlocks Live TV
+  if (LIVETV_TRANSITION_COURTESY && isSubscriptionActiveNow(user.subscription)) {
+    return requiredPackages.includes(user.subscription!.packageType);
+  }
+
+  return false;
 };
 
 /**
@@ -321,12 +429,36 @@ export const getUserSubscriptionStatus = (user: User | null): {
   };
 };
 
+export const getUserLiveTvSubscriptionStatus = (user: User | null): {
+  isActive: boolean;
+  packageType?: SubscriptionPackage;
+  daysRemaining?: number;
+  endDate?: Date;
+} => {
+  if (!user || !user.liveTvSubscription) {
+    return { isActive: false };
+  }
+
+  const now = new Date();
+  const endDate = new Date(user.liveTvSubscription.endDate);
+  const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+  return {
+    isActive: user.liveTvSubscription.isActive && endDate > now,
+    packageType: user.liveTvSubscription.packageType,
+    daysRemaining: Math.max(0, daysRemaining),
+    endDate
+  };
+};
+
 export const initiatePayment = async (
   user: User,
   packageType: SubscriptionPackage,
-  phoneNumber: string
+  phoneNumber: string,
+  category: PackageCategory = 'GENERAL'
 ): Promise<PaymentRequest> => {
-  const packagesConfig = await getPackagesConfig();
+  const isLiveTv = category === 'LIVETV';
+  const packagesConfig = isLiveTv ? await getLiveTvPackagesConfig() : await getPackagesConfig();
   const packageConfig = packagesConfig[packageType];
 
   const paymentId = crypto.randomUUID();
@@ -334,6 +466,7 @@ export const initiatePayment = async (
     id: paymentId,
     user_id: user.uid,
     package_type: packageType,
+    package_category: category,
     amount: packageConfig.price,
     phone_number: phoneNumber,
     status: 'pending',
@@ -352,6 +485,7 @@ export const initiatePayment = async (
     id: docRef.id,
     userId: user.uid,
     packageType,
+    packageCategory: category,
     amount: packageConfig.price,
     phoneNumber,
     status: 'pending',
@@ -372,6 +506,7 @@ export const initiatePayment = async (
       body: JSON.stringify({ 
         packageType, 
         phoneNumber,
+        category,
         buyerName: user.displayName || user.username || 'Customer'
       })
     });
@@ -610,15 +745,23 @@ export const completePayment = async (
       }
       await supabase.from('rahapremium_users').update({ content_accesses: currentAccesses }).eq('id', userId);
     } else if (paymentType === 'subscription') {
+      const category: PackageCategory = (paymentDoc.package_category === 'LIVETV') ? 'LIVETV' : 'GENERAL';
       if (user) {
-        await processSubscription(user, paymentDoc.package_type, paymentId, isManual, completedBy);
+        await processSubscription(user, paymentDoc.package_type, paymentId, isManual, completedBy, undefined, category);
       } else {
         // Fetch user and process subscription
         const { data: userData } = await supabase.from('rahapremium_users').select('*').eq('id', userId).single();
         if (userData) {
-          // Build a minimal user object for processSubscription
-          const minUser = { uid: userData.id, paymentHistory: userData.payment_history || [], subscription: userData.subscription, subscriptionHistory: userData.subscription_history || [] } as unknown as User;
-          await processSubscription(minUser, paymentDoc.package_type, paymentId, isManual, completedBy);
+          // Build a minimal user object for processSubscription (both categories)
+          const minUser = {
+            uid: userData.id,
+            paymentHistory: userData.payment_history || [],
+            subscription: userData.subscription,
+            subscriptionHistory: userData.subscription_history || [],
+            liveTvSubscription: userData.live_tv_subscription,
+            liveTvSubscriptionHistory: userData.live_tv_subscription_history || []
+          } as unknown as User;
+          await processSubscription(minUser, paymentDoc.package_type, paymentId, isManual, completedBy, undefined, category);
         }
       }
     }

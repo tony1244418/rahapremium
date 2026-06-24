@@ -16,18 +16,21 @@ import {
   Clock,
   Download,
   Smartphone,
-  User
+  User,
+  Tv
 } from 'lucide-react';
 import { 
   SUBSCRIPTION_PACKAGES, 
   getPackagesConfig,
+  getLiveTvPackagesConfig,
   PackagesConfigMap,
   getUserSubscriptionStatus, 
+  getUserLiveTvSubscriptionStatus,
   initiatePayment,
   checkPaymentStatus,
   completePayment
 } from '@/lib/subscriptions';
-import { SubscriptionPackage, PaymentRequest } from '@/types';
+import { SubscriptionPackage, PackageCategory, PaymentRequest } from '@/types';
 import { motion } from 'framer-motion';
 import LiveTimer from '@/components/ui/LiveTimer';
 
@@ -46,17 +49,24 @@ export default function SubscriptionsPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [showTestUserModal, setShowTestUserModal] = useState(false);
   const [packagesConfig, setPackagesConfig] = useState<PackagesConfigMap | null>(null);
+  const [liveTvPackagesConfig, setLiveTvPackagesConfig] = useState<PackagesConfigMap | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<PackageCategory>('GENERAL');
   const phoneInputRef = useRef<HTMLInputElement>(null);
   const modalPhoneInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const config = await getPackagesConfig();
+        const [config, liveTvConfig] = await Promise.all([
+          getPackagesConfig(),
+          getLiveTvPackagesConfig()
+        ]);
         setPackagesConfig(config);
+        setLiveTvPackagesConfig(liveTvConfig);
       } catch (err) {
         console.error('Failed to load packages config', err);
         setPackagesConfig(SUBSCRIPTION_PACKAGES);
+        setLiveTvPackagesConfig(SUBSCRIPTION_PACKAGES);
       }
     };
     loadConfig();
@@ -75,6 +85,7 @@ export default function SubscriptionsPage() {
   }, [showPaymentModal]);
 
   const subscriptionStatus = getUserSubscriptionStatus(user);
+  const liveTvSubscriptionStatus = getUserLiveTvSubscriptionStatus(user);
 
   // Pre-fill phone number only once on mount — never overwrite user edits
   useEffect(() => {
@@ -133,17 +144,22 @@ export default function SubscriptionsPage() {
     return cleaned;
   };
 
-  const handleSubscribe = async (packageType: SubscriptionPackage) => {
-    // Check if user has active subscription and show warning
-    if (user && user.subscription && user.subscription.isActive) {
-      const remainingDays = Math.ceil((user.subscription.endDate.getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000));
-      const packageConfig = (packagesConfig || SUBSCRIPTION_PACKAGES)[packageType];
+  const handleSubscribe = async (packageType: SubscriptionPackage, category: PackageCategory = 'GENERAL') => {
+    const isLiveTv = category === 'LIVETV';
+    const cfgMap = (isLiveTv ? liveTvPackagesConfig : packagesConfig) || SUBSCRIPTION_PACKAGES;
+    const currentSub = isLiveTv ? user?.liveTvSubscription : user?.subscription;
+    const categoryLabel = isLiveTv ? 'Live TV' : '';
+
+    // Check if user has active subscription in this category and show warning
+    if (user && currentSub && currentSub.isActive) {
+      const remainingDays = Math.ceil((new Date(currentSub.endDate).getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000));
+      const packageConfig = cfgMap[packageType];
       
       let warningMessage = '';
-      if (user.subscription.packageType === packageType) {
-        warningMessage = `You have ${remainingDays} days left on your current ${packageType} subscription. Renewing will double your duration to ${packageConfig.days * 2} days. Continue?`;
+      if (currentSub.packageType === packageType) {
+        warningMessage = `You have ${remainingDays} days left on your current ${categoryLabel} ${packageType} subscription. Renewing will add ${packageConfig.days} more days. Continue?`;
       } else {
-        warningMessage = `You have ${remainingDays} days left on your current ${user.subscription.packageType} subscription. This will be added to your new ${packageType} subscription (${packageConfig.days} days). Total: ${remainingDays + packageConfig.days} days. Continue?`;
+        warningMessage = `You have ${remainingDays} days left on your current ${categoryLabel} ${currentSub.packageType} subscription. This will be added to your new ${packageType} subscription (${packageConfig.days} days). Total: ${remainingDays + packageConfig.days} days. Continue?`;
       }
       
       if (!confirm(warningMessage)) {
@@ -159,6 +175,7 @@ export default function SubscriptionsPage() {
     }
 
     // Open payment modal first (don't initiate payment yet)
+    setSelectedCategory(category);
     setSelectedPackage(packageType);
     setShowPaymentModal(true);
     setPaymentRequest(null);
@@ -192,7 +209,7 @@ export default function SubscriptionsPage() {
       }
 
       setPaymentError(null);
-      const payment = await initiatePayment(user, selectedPackage, formattedPhone);
+      const payment = await initiatePayment(user, selectedPackage, formattedPhone, selectedCategory);
       setPaymentRequest(payment);
       setPaymentStatus('pending');
       setStatusMessage(t('paymentRequestSent'));
@@ -217,6 +234,7 @@ export default function SubscriptionsPage() {
     setShowPaymentModal(false);
     setPaymentRequest(null);
     setSelectedPackage(null);
+    setSelectedCategory('GENERAL');
     setPaymentStatus('pending');
     setStatusMessage('');
     setPaymentError(null);
@@ -378,6 +396,12 @@ export default function SubscriptionsPage() {
     };
   }, [pollingInterval]);
 
+  // Config used by the payment modal, based on the category being purchased.
+  const modalConfig = (selectedCategory === 'LIVETV'
+    ? (liveTvPackagesConfig || SUBSCRIPTION_PACKAGES)
+    : (packagesConfig || SUBSCRIPTION_PACKAGES));
+  const selectedCategoryLabel = selectedCategory === 'LIVETV' ? 'Live TV' : '';
+
   return (
     <ProtectedRoute>
       <MainLayout>
@@ -511,10 +535,126 @@ export default function SubscriptionsPage() {
                     ) : (
                       <button
                         onClick={() => handleSubscribe(pkgId)}
-                        disabled={loading && selectedPackage === pkgId}
+                        disabled={loading && selectedPackage === pkgId && selectedCategory === 'GENERAL'}
                         className="button-primary px-6 py-2"
                       >
-                        {loading && selectedPackage === pkgId ? t('loading') : t('subscribe')}
+                        {loading && selectedPackage === pkgId && selectedCategory === 'GENERAL' ? t('loading') : t('subscribe')}
+                      </button>
+                    )}
+                  </div>
+                  {cfg.description && (
+                    <div className="mt-2 pt-4 border-t border-dark-700/50">
+                      <p className="text-sm text-dark-300 whitespace-pre-wrap">{cfg.description}</p>
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* Live TV Subscription Status */}
+          {liveTvSubscriptionStatus.isActive && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass-effect rounded-lg p-6"
+            >
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center">
+                  <Tv size={24} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-dark-100">
+                    Active Live TV Subscription
+                  </h3>
+                  <p className="text-dark-400">
+                    {liveTvSubscriptionStatus.packageType} Package
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-4 bg-dark-800/50 rounded-lg">
+                  <Calendar className="w-6 h-6 mx-auto mb-2 text-emerald-400" />
+                  <p className="text-sm text-dark-400">{t('daysRemaining')}</p>
+                  <p className="text-xl font-bold text-emerald-400">
+                    {liveTvSubscriptionStatus.daysRemaining}
+                  </p>
+                </div>
+                <div className="text-center p-4 bg-dark-800/50 rounded-lg">
+                  <Clock className="w-6 h-6 mx-auto mb-2 text-emerald-400" />
+                  <p className="text-sm text-dark-400">{t('expiresOn')}</p>
+                  <p className="text-sm font-semibold text-dark-100">
+                    {liveTvSubscriptionStatus.endDate?.toLocaleDateString('en-GB')}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Live TV Packages */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 pt-2">
+              <Tv size={22} className="text-emerald-400" />
+              <h2 className="text-lg font-bold text-dark-100">Live TV Packages</h2>
+            </div>
+            <p className="text-sm text-dark-400">Vifurushi vya Luninga (Live TV) — vinafungua vituo vya moja kwa moja pekee.</p>
+
+            {!liveTvPackagesConfig && packageOrder.map((_, i) => (
+              <div key={`tv-skel-${i}`} className="glass-effect rounded-lg p-6 animate-pulse">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-16 h-16 bg-dark-700 rounded-full" />
+                    <div className="space-y-2">
+                      <div className="h-5 w-24 bg-dark-700 rounded" />
+                      <div className="h-4 w-16 bg-dark-700 rounded" />
+                      <div className="h-6 w-28 bg-dark-700 rounded" />
+                    </div>
+                  </div>
+                  <div className="h-10 w-24 bg-dark-700 rounded-lg" />
+                </div>
+              </div>
+            ))}
+
+            {liveTvPackagesConfig && packageOrder.map((pkgId, index) => {
+              const cfg = liveTvPackagesConfig[pkgId] ?? SUBSCRIPTION_PACKAGES[pkgId];
+              const color = packageColors[pkgId] ?? 'from-emerald-500 to-emerald-700';
+              const durationLabel = cfg.days === 1 ? '1 Siku' : `${cfg.days} Siku`;
+              const isActiveTv = liveTvSubscriptionStatus.packageType === pkgId && liveTvSubscriptionStatus.isActive;
+
+              return (
+                <motion.div
+                  key={`tv-${pkgId}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className={`glass-effect rounded-lg p-6 ${isActiveTv ? 'ring-2 ring-emerald-500' : ''}`}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-4">
+                      <div className={`w-16 h-16 bg-gradient-to-br ${color} rounded-full flex items-center justify-center`}>
+                        <Tv size={28} className="text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-dark-100">{cfg.name}</h3>
+                        <p className="text-dark-400">{durationLabel}</p>
+                        <p className="text-2xl font-bold text-emerald-400">
+                          TSH {cfg.price.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    {isActiveTv ? (
+                      <div className="flex items-center space-x-2 text-emerald-400">
+                        <CheckCircle size={20} />
+                        <span className="text-sm font-medium">Active</span>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleSubscribe(pkgId, 'LIVETV')}
+                        disabled={loading && selectedPackage === pkgId && selectedCategory === 'LIVETV'}
+                        className="button-primary px-6 py-2"
+                      >
+                        {loading && selectedPackage === pkgId && selectedCategory === 'LIVETV' ? t('loading') : t('subscribe')}
                       </button>
                     )}
                   </div>
@@ -568,7 +708,8 @@ export default function SubscriptionsPage() {
                   {paymentRequest ? 'Kamilisha Malipo' : 'Thibitisha Malipo'}
                 </h3>
                 <p className="text-dark-400">
-                  Kifurushi cha {selectedPackage} - TSH {(packagesConfig || SUBSCRIPTION_PACKAGES)[selectedPackage!].price.toLocaleString()}
+                  {selectedCategoryLabel && <span className="text-emerald-400 font-semibold">{selectedCategoryLabel} </span>}
+                  Kifurushi cha {selectedPackage} - TSH {modalConfig[selectedPackage!].price.toLocaleString()}
                 </p>
               </div>
 
@@ -604,8 +745,8 @@ export default function SubscriptionsPage() {
                 {/* Jumla ya Malipo */}
                 <div className="p-4 bg-dark-800/30 rounded-lg">
                   <div className="flex justify-between items-center">
-                    <span className="text-dark-300 font-medium">Kifurushi cha {selectedPackage}</span>
-                    <span className="text-primary-400 font-bold text-lg">TSH {(packagesConfig || SUBSCRIPTION_PACKAGES)[selectedPackage!].price.toLocaleString()}</span>
+                    <span className="text-dark-300 font-medium">{selectedCategoryLabel} Kifurushi cha {selectedPackage}</span>
+                    <span className="text-primary-400 font-bold text-lg">TSH {modalConfig[selectedPackage!].price.toLocaleString()}</span>
                   </div>
                 </div>
 

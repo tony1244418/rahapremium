@@ -3,7 +3,7 @@ import { initiatePayment } from '@/lib/payment-gateway';
 
 export async function POST(request: NextRequest) {
   try {
-    const { packageType, phoneNumber, buyerName } = await request.json();
+    const { packageType, phoneNumber, buyerName, category } = await request.json();
 
     if (!packageType || !phoneNumber) {
       return NextResponse.json(
@@ -12,8 +12,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { getPackagesConfig } = await import('@/lib/subscriptions');
-    const packagesConfig = await getPackagesConfig();
+    const { getPackagesConfig, getLiveTvPackagesConfig } = await import('@/lib/subscriptions');
+    const packagesConfig = category === 'LIVETV'
+      ? await getLiveTvPackagesConfig()
+      : await getPackagesConfig();
     const amount = packagesConfig[packageType as keyof typeof packagesConfig]?.price;
 
     if (!amount) {

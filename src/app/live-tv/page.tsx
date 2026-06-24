@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { subscribeToLiveChannels } from '@/lib/live-channels';
 import { LiveChannel } from '@/types';
-import { hasAccessToContent } from '@/lib/subscriptions';
+import { hasLiveTvAccess } from '@/lib/subscriptions';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loading } from '@/components/ui/Loading';
 import LiveTvSlider from '@/components/LiveTvSlider';
@@ -196,9 +196,8 @@ function LiveTVContent() {
       return;
     }
     
-    // Explicitly check if user has an active package. We treat all live channels as premium.
-    const userHasAnyPackage = user?.subscription?.isActive === true;
-    const hasAccess = userHasAnyPackage && hasAccessToContent(user, channel.requiredPackages);
+    // Live channels are gated by the user's independent Live TV subscription.
+    const hasAccess = hasLiveTvAccess(user, channel.requiredPackages);
 
     if (!hasAccess) {
       // If the admin enabled "Free Trial for Everyone", grant the trial without
@@ -914,7 +913,7 @@ function LiveTVContent() {
             {activeChannels.map((channel, index) => {
               // When "All Channels Free" is ON, no channel is locked.
               const isFreeChannel = !channel.requiredPackages || channel.requiredPackages.length === 0;
-              const hasAccess = toggles.liveTvAllFree || isFreeChannel || hasAccessToContent(user, channel.requiredPackages);
+              const hasAccess = toggles.liveTvAllFree || isFreeChannel || hasLiveTvAccess(user, channel.requiredPackages);
               const gradient = getCategoryGradient(channel.category);
 
               if (viewMode === 'list') {

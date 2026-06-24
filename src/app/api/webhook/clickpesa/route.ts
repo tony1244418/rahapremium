@@ -170,10 +170,12 @@ export async function POST(request: NextRequest) {
         await supabaseServer.from('rahapremium_users').update(updatePayload).eq('id', user.uid);
 
         const packageType = paymentDoc.package_type;
+        const isLiveTv = paymentDoc.package_category === 'LIVETV';
+        const settingsId = isLiveTv ? 'packages_livetv' : 'packages';
         const packagesConfigRes = await supabaseServer
           .from('settings')
           .select('data')
-          .eq('id', 'packages')
+          .eq('id', settingsId)
           .single();
 
         let packagesConfig: any = {
@@ -187,22 +189,28 @@ export async function POST(request: NextRequest) {
           packagesConfig = { ...packagesConfig, ...packagesConfigRes.data.data };
         }
 
+        // Operate on the subscription belonging to this category only.
+        const currentSub: any = isLiveTv ? userData.live_tv_subscription : user.subscription;
+        const currentSubHistory: any[] = isLiveTv
+          ? (userData.live_tv_subscription_history || [])
+          : (user.subscriptionHistory || []);
+
         const packageConfig = packagesConfig[packageType];
         const now           = new Date();
         const hierarchy     = ['FEDHA', 'CHUMA', 'DHAHABU', 'ALMASI', 'MALKIA'];
         const isUpgrade =
-          user.subscription?.isActive &&
-          hierarchy.indexOf(packageType) > hierarchy.indexOf(user.subscription.packageType);
+          currentSub?.isActive &&
+          hierarchy.indexOf(packageType) > hierarchy.indexOf(currentSub.packageType);
         const isRenewal =
-          user.subscription?.packageType === packageType && user.subscription?.isActive;
+          currentSub?.packageType === packageType && currentSub?.isActive;
 
         let endDate: Date;
-        if (isRenewal && user.subscription?.isActive) {
-          endDate = new Date(new Date(user.subscription.endDate).getTime() + packageConfig.days * 86400000);
-        } else if (isUpgrade && user.subscription) {
-          endDate = new Date(new Date(user.subscription.endDate).getTime() + packageConfig.days * 86400000);
-        } else if (user.subscription?.isActive) {
-          const remaining = new Date(user.subscription.endDate).getTime() - now.getTime();
+        if (isRenewal && currentSub?.isActive) {
+          endDate = new Date(new Date(currentSub.endDate).getTime() + packageConfig.days * 86400000);
+        } else if (isUpgrade && currentSub) {
+          endDate = new Date(new Date(currentSub.endDate).getTime() + packageConfig.days * 86400000);
+        } else if (currentSub?.isActive) {
+          const remaining = new Date(currentSub.endDate).getTime() - now.getTime();
           endDate = new Date(now.getTime() + remaining + packageConfig.days * 86400000);
         } else {
           endDate = new Date(now.getTime() + packageConfig.days * 86400000);
@@ -218,18 +226,25 @@ export async function POST(request: NextRequest) {
           amount:           packageConfig.price,
           isRenewal:        !!isRenewal,
           isUpgrade:        !!isUpgrade,
-          previousPackage:  user.subscription?.packageType || null,
+          previousPackage:  currentSub?.packageType || null,
           createdAt:        now,
+          category:         isLiveTv ? 'LIVETV' : 'GENERAL',
         };
 
-        const updatedSubHistory = [...(user.subscriptionHistory || []), newSubscription].map((s: any) =>
-          s.id === user.subscription?.id ? { ...s, isActive: false } : s
+        const updatedSubHistory = [...currentSubHistory, newSubscription].map((s: any) =>
+          s.id === currentSub?.id ? { ...s, isActive: false } : s
         );
 
-        await supabaseServer.from('rahapremium_users').update({
-          subscription:         JSON.parse(JSON.stringify(newSubscription)),
-          subscription_history: JSON.parse(JSON.stringify(updatedSubHistory)),
-        }).eq('id', user.uid);
+        const subUpdatePayload = isLiveTv
+          ? {
+              live_tv_subscription:         JSON.parse(JSON.stringify(newSubscription)),
+              live_tv_subscription_history: JSON.parse(JSON.stringify(updatedSubHistory)),
+            }
+          : {
+              subscription:         JSON.parse(JSON.stringify(newSubscription)),
+              subscription_history: JSON.parse(JSON.stringify(updatedSubHistory)),
+            };
+        await supabaseServer.from('rahapremium_users').update(subUpdatePayload).eq('id', user.uid);
       }
 
       console.log('✅ ClickPesa Webhook: payment completed for', orderReference);

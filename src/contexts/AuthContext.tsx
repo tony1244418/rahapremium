@@ -90,6 +90,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
               subscriptionHistory: userData.subscription_history || [],
               paymentHistory: userData.payment_history || [],
               contentAccesses: userData.content_accesses || [],
+              liveTvSubscription: userData.live_tv_subscription || null,
+              liveTvSubscriptionHistory: userData.live_tv_subscription_history || [],
             };
 
             // Add/update this device in active_sessions
@@ -233,6 +235,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           subscriptionHistory: data.subscription_history || [],
           paymentHistory: data.payment_history || [],
           contentAccesses: data.content_accesses || [],
+          liveTvSubscription: data.live_tv_subscription || null,
+          liveTvSubscriptionHistory: data.live_tv_subscription_history || [],
         };
 
         // Check subscription expiry
@@ -388,6 +392,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           subscriptionHistory: userData.subscription_history || [],
           paymentHistory: userData.payment_history || [],
           contentAccesses: userData.content_accesses || [],
+          liveTvSubscription: userData.live_tv_subscription || null,
+          liveTvSubscriptionHistory: userData.live_tv_subscription_history || [],
         };
 
         setUser(loggedInUser);
@@ -510,6 +516,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
             subscriptionHistory: data.subscription_history || [],
             paymentHistory: data.payment_history || [],
             contentAccesses: data.content_accesses || [],
+            liveTvSubscription: data.live_tv_subscription || null,
+            liveTvSubscriptionHistory: data.live_tv_subscription_history || [],
           };
           setUser(updatedUser);
         }

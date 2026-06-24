@@ -114,3 +114,40 @@ temp/
 cloudflared.exe
 mingit.zip
 mingit/
+
+# =====================================================================
+# Secrets & local data — DO NOT COMMIT (added for safe GitHub push)
+# =====================================================================
+# One-off admin/debug scripts that contain hardcoded Supabase keys.
+# These are NOT used by the website (the app in src/ reads keys from env).
+add_azam1.js
+update_azam.js
+update_azam1.js
+update_global_token.js
+check_columns.mjs
+check_user.mjs
+check_data.mjs
+check_rls.mjs
+enable_realtime.mjs
+qr_setup.mjs
+qr_fix_payload.json
+test_anon_read.mjs
+test_anon_update.mjs
+test_anon_update_sessions.mjs
+check-movies.js
+check-user-payments.js
+debug-user-subscription.js
+
+# Public HTML page containing an embedded key
+public/azam1.html
+
+# Database exports containing user PII (phone numbers, payments, etc.)
+supabase-backup/
+
+# Supabase local temp (contains a Postgres pooler connection string)
+supabase/.temp/
+
+# Debug / scratch scripts and outputs
+scratch/
+scratch-test.js
+scratch-test-result.json

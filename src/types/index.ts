@@ -14,6 +14,8 @@ export interface User {
   paymentHistory: PaymentRequest[];
   contentAccesses?: string[]; // Array of purchased content IDs
   gameAccesses?: GameAccess[]; // User's game access records
+  liveTvSubscription?: UserSubscription | null; // Independent Live TV subscription
+  liveTvSubscriptionHistory?: UserSubscription[]; // History of Live TV subscriptions
 }
 
 export interface UserSubscription {
@@ -28,9 +30,14 @@ export interface UserSubscription {
   isUpgrade: boolean;
   previousPackage?: SubscriptionPackage | null;
   createdAt: Date;
+  category?: PackageCategory; // Defaults to 'GENERAL' when absent
 }
 
 export type SubscriptionPackage = 'FEDHA' | 'CHUMA' | 'DHAHABU' | 'ALMASI' | 'MALKIA' | 'KITONGA' | 'ZEBRA' | 'SIMBA' | 'SWALA' | 'NDOVU' | 'FARU' | 'TWIGA';
+
+// Package category: 'GENERAL' covers movies/series/stories (existing behavior),
+// 'LIVETV' is the separate package set used only for live channels.
+export type PackageCategory = 'GENERAL' | 'LIVETV';
 
 export interface SubscriptionPlan {
   id: SubscriptionPackage;
@@ -250,6 +257,7 @@ export interface PaymentRequest {
   isManuallyCompleted?: boolean;
   completedBy?: string; // admin uid who completed manually
   paymentType?: 'subscription' | 'game' | 'content'; // Type of payment (optional for backward compatibility)
+  packageCategory?: PackageCategory; // 'LIVETV' for live TV subscriptions; absent/'GENERAL' otherwise
   contentId?: string; // For single-content purchases
   contentType?: 'movie' | 'series' | 'episode' | 'story' | 'live';
   contentDurationDays?: number;
