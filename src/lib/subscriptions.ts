@@ -308,10 +308,10 @@ export const hasAccessToContent = (
   return requiredPackages.includes(user.subscription.packageType);
 };
 
-// During the transition window, an active general subscription also grants
-// Live TV access. Turn this OFF after the transition period so that Live TV
-// requires its own subscription.
-export const LIVETV_TRANSITION_COURTESY = true;
+// When ON, an active general (movie) subscription ALSO unlocks Live TV — used
+// only as a temporary transition courtesy. It is OFF so that Live TV requires
+// its own dedicated subscription (channels use their own package).
+export const LIVETV_TRANSITION_COURTESY = false;
 
 const isSubscriptionActiveNow = (sub?: UserSubscription | null): boolean => {
   if (!sub || !sub.isActive) return false;
