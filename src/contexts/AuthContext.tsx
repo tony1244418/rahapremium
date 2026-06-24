@@ -64,6 +64,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const { toggles: platformToggles, loading: platformControlsLoading } = usePlatformControls();
   const isInitializedRef = React.useRef(false);
+  // Tracks the last Supabase auth user id we processed, so token refreshes
+  // (which fire on tab focus) don't trigger a full reload of the app/admin panel.
+  const lastAuthIdRef = React.useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
@@ -126,6 +129,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Token refreshes fire when the tab regains focus. They don't change who
+      // is logged in, so skip them — otherwise the whole app (and admin panel)
+      // flips to the loading state and visibly reloads on every tab switch.
+      if (event === 'TOKEN_REFRESHED') {
+        return;
+      }
+      // If the auth identity hasn't changed since we last processed it (e.g. a
+      // duplicate SIGNED_IN on focus), don't reload either.
+      const newAuthId = session?.user?.id ?? null;
+      if (isInitializedRef.current && event !== 'SIGNED_OUT' && newAuthId === lastAuthIdRef.current) {
+        return;
+      }
+      lastAuthIdRef.current = newAuthId;
+
       setLoading(true);
       
       try {
