@@ -249,7 +249,7 @@ export default function AdminPaymentsPage() {
         }
       }
 
-      showToast('success', `✅ Malipo yamekamilika — ${users[payment.user_id]?.display_name || payment.phone_number} amepata huduma!`);
+      showToast('success', `Malipo yamekamilika — ${users[payment.user_id]?.display_name || payment.phone_number} amepata huduma!`);
       await loadPayments();
     } catch (err: any) {
       console.error('Error completing payment:', err);
@@ -395,19 +395,19 @@ export default function AdminPaymentsPage() {
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-orange-400 inline-block"></span>
+                    <span className="w-2 h-2 rounded-full bg-primary-400 inline-block"></span>
                     <span className="text-dark-400">HarakaPay</span>
                     <span className="text-dark-600">({todayRevenue.hpCount})</span>
                   </span>
-                  <span className="font-semibold text-orange-300">TSH {todayRevenue.harakapay.toLocaleString()}</span>
+                  <span className="font-semibold text-primary-300">TSH {todayRevenue.harakapay.toLocaleString()}</span>
                 </div>
                 {todayRevenue.manualCount > 0 && (
                   <div className="flex items-center justify-between text-xs pt-1 border-t border-dark-700/40">
                     <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-purple-400 inline-block"></span>
+                      <span className="w-2 h-2 rounded-full bg-primary-400 inline-block"></span>
                       <span className="text-dark-400">Manual</span>
                     </span>
-                    <span className="text-purple-400 font-medium">({todayRevenue.manualCount} transactions)</span>
+                    <span className="text-primary-400 font-medium">({todayRevenue.manualCount} transactions)</span>
                   </div>
                 )}
               </div>
@@ -436,19 +436,19 @@ export default function AdminPaymentsPage() {
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-orange-400 inline-block"></span>
+                    <span className="w-2 h-2 rounded-full bg-primary-400 inline-block"></span>
                     <span className="text-dark-400">HarakaPay</span>
                     <span className="text-dark-600">({yesterdayRevenue.hpCount})</span>
                   </span>
-                  <span className="font-semibold text-orange-300">TSH {yesterdayRevenue.harakapay.toLocaleString()}</span>
+                  <span className="font-semibold text-primary-300">TSH {yesterdayRevenue.harakapay.toLocaleString()}</span>
                 </div>
                 {yesterdayRevenue.manualCount > 0 && (
                   <div className="flex items-center justify-between text-xs pt-1 border-t border-dark-700/40">
                     <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-purple-400 inline-block"></span>
+                      <span className="w-2 h-2 rounded-full bg-primary-400 inline-block"></span>
                       <span className="text-dark-400">Manual</span>
                     </span>
-                    <span className="text-purple-400 font-medium">({yesterdayRevenue.manualCount} transactions)</span>
+                    <span className="text-primary-400 font-medium">({yesterdayRevenue.manualCount} transactions)</span>
                   </div>
                 )}
               </div>
@@ -472,28 +472,28 @@ export default function AdminPaymentsPage() {
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="w-2 h-2 rounded-full bg-blue-400 inline-block"></span>
-                  <span className="text-xs font-bold text-blue-300">⚡ ClickPesa</span>
+                  <span className="text-xs font-bold text-blue-300">ClickPesa</span>
                 </div>
                 <div className="text-base font-black text-blue-300">TSH {allTimeRevenue.clickpesa.toLocaleString()}</div>
                 <div className="text-xs text-blue-500 mt-0.5">{allTimeRevenue.cpCount} transactions</div>
               </div>
               {/* HarakaPay */}
-              <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
+              <div className="bg-primary-500/10 border border-primary-500/20 rounded-lg p-3">
                 <div className="flex items-center gap-1.5 mb-1">
-                  <span className="w-2 h-2 rounded-full bg-orange-400 inline-block"></span>
-                  <span className="text-xs font-bold text-orange-300">🟧 HarakaPay</span>
+                  <span className="w-2 h-2 rounded-full bg-primary-400 inline-block"></span>
+                  <span className="text-xs font-bold text-primary-300">HarakaPay</span>
                 </div>
-                <div className="text-base font-black text-orange-300">TSH {allTimeRevenue.harakapay.toLocaleString()}</div>
-                <div className="text-xs text-orange-500 mt-0.5">{allTimeRevenue.hpCount} transactions</div>
+                <div className="text-base font-black text-primary-300">TSH {allTimeRevenue.harakapay.toLocaleString()}</div>
+                <div className="text-xs text-primary-500 mt-0.5">{allTimeRevenue.hpCount} transactions</div>
               </div>
               {/* Manual — always shown in all-time */}
-              <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
+              <div className="bg-primary-500/10 border border-primary-500/20 rounded-lg p-3">
                 <div className="flex items-center gap-1.5 mb-1">
-                  <span className="w-2 h-2 rounded-full bg-purple-400 inline-block"></span>
-                  <span className="text-xs font-bold text-purple-300">🟣 Manual (Admin)</span>
+                  <span className="w-2 h-2 rounded-full bg-primary-400 inline-block"></span>
+                  <span className="text-xs font-bold text-primary-300">Manual (Admin)</span>
                 </div>
-                <div className="text-base font-black text-purple-400 mt-2">{allTimeRevenue.manualCount} transactions</div>
-                <div className="text-xs text-purple-500/70 mt-1">Value hidden</div>
+                <div className="text-base font-black text-primary-400 mt-2">{allTimeRevenue.manualCount} transactions</div>
+                <div className="text-xs text-primary-500/70 mt-1">Value hidden</div>
               </div>
             </div>
           </div>
@@ -593,7 +593,7 @@ export default function AdminPaymentsPage() {
                               {payment.status}
                             </span>
                             {payment.is_manually_completed && (
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/30">
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-primary-500/15 text-primary-400 border border-primary-500/30">
                                 admin
                               </span>
                             )}
@@ -684,10 +684,10 @@ export default function AdminPaymentsPage() {
                                 detectGateway(payment) === 'clickpesa'
                                   ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
                                   : detectGateway(payment) === 'harakapay'
-                                  ? 'bg-orange-500/15 text-orange-400 border-orange-500/30'
-                                  : 'bg-violet-500/15 text-violet-400 border-violet-500/30'
+                                  ? 'bg-primary-500/15 text-primary-400 border-primary-500/30'
+                                  : 'bg-primary-500/15 text-primary-400 border-primary-500/30'
                               }`}>
-                                {detectGateway(payment) === 'clickpesa' ? '⚡ ClickPesa' : '🟧 HarakaPay'}
+                                {detectGateway(payment) === 'clickpesa' ? 'ClickPesa' : 'HarakaPay'}
                               </span>
                             </div>
 

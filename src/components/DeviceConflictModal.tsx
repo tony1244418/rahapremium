@@ -118,9 +118,9 @@ export default function DeviceConflictModal() {
                   <button
                     onClick={handleContinueHere}
                     className="w-full py-3.5 rounded-2xl font-bold text-white text-sm transition-all duration-200 active:scale-95"
-                    style={{ background: 'linear-gradient(135deg, #1e6bef, #7c3aed)' }}
+                    style={{ background: 'linear-gradient(135deg, #1e6bef, #1e40af)' }}
                   >
-                    ✅ Ndiyo, Endelea Hapa
+                    Ndiyo, Endelea Hapa
                   </button>
                   <button
                     onClick={handleGoBack}

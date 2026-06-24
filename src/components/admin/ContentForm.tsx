@@ -259,7 +259,7 @@ export default function ContentForm({ isOpen, onClose, onSubmit, type, editData,
                 {/* Help Text */}
                 <div className="mt-2 p-3 bg-blue-900/20 border border-blue-700/30 rounded-lg">
                   <p className="text-xs text-blue-300 mb-1">
-                    <strong>💡 How it works:</strong>
+                    <strong>How it works:</strong>
                   </p>
                   <ul className="text-xs text-blue-200/80 space-y-1 ml-4 list-disc">
                     <li>The system will automatically use your <strong>video URL</strong> to create an auto-playing video thumbnail preview</li>
@@ -527,7 +527,7 @@ export default function ContentForm({ isOpen, onClose, onSubmit, type, editData,
                     {/* Help Text */}
                     <div className="mt-2 p-3 bg-blue-900/20 border border-blue-700/30 rounded-lg">
                       <p className="text-xs text-blue-300 mb-2">
-                        <strong>📹 Supported Video URL Formats:</strong>
+                        <strong>Supported Video URL Formats:</strong>
                       </p>
                       <ul className="text-xs text-blue-200/80 space-y-1 ml-4 list-disc">
                         <li><strong>Bunny.net (MediaDelivery):</strong> <code className="bg-dark-800 px-1 rounded">https://iframe.mediadelivery.net/play/LIBRARY_ID/VIDEO_ID</code></li>
@@ -537,7 +537,7 @@ export default function ContentForm({ isOpen, onClose, onSubmit, type, editData,
                         <li><strong>Direct MP4:</strong> <code className="bg-dark-800 px-1 rounded">https://example.com/video.mp4</code></li>
                       </ul>
                       <p className="text-xs text-blue-200/80 mt-2">
-                        💡 <strong>Recommended:</strong> Use Bunny.net (MediaDelivery) iframe URLs for best performance and quality.
+                        <strong>Recommended:</strong> Use Bunny.net (MediaDelivery) iframe URLs for best performance and quality.
                       </p>
                     </div>
 
@@ -552,7 +552,7 @@ export default function ContentForm({ isOpen, onClose, onSubmit, type, editData,
                         placeholder={`Paste custom HTML player code here, e.g.:\n<iframe src="https://..." allowfullscreen></iframe>`}
                       />
                       <p className="text-xs text-amber-400/80 mt-1">
-                        ⚠️ If filled, this HTML code will be used as the player instead of the Video URL above. Leave empty to use the URL.
+                        If filled, this HTML code will be used as the player instead of the Video URL above. Leave empty to use the URL.
                       </p>
                     </div>
                   </div>
@@ -567,7 +567,7 @@ export default function ContentForm({ isOpen, onClose, onSubmit, type, editData,
                       placeholder="https://vz-efe8986b-460.b-cdn.net/00dfddf1-9155-4a66-a192-fef3ea3202ff/original"
                     />
                     <p className="text-xs text-dark-400 mt-1">
-                      💡 <strong>Bunny CDN:</strong> Use the direct download URL from Bunny.net. This enables direct downloads without CDN blocking.
+                      <strong>Bunny CDN:</strong> Use the direct download URL from Bunny.net. This enables direct downloads without CDN blocking.
                     </p>
                     <p className="text-xs text-dark-400 mt-1">
                       Example: <code className="bg-dark-800 px-1 rounded text-xs">https://vz-XXXXX.b-cdn.net/VIDEO_ID/original</code>

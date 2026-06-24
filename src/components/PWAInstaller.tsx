@@ -158,7 +158,7 @@ export default function PWAInstaller() {
                   <div className="text-xs text-dark-400 mb-3">
                     <p className="mb-2">To install this app on your iPhone:</p>
                     <ol className="list-decimal list-inside space-y-1 text-xs">
-                      <li>Tap the Share button <span className="font-semibold">⎋</span> at the bottom</li>
+                      <li>Tap the Share button at the bottom</li>
                       <li>Scroll down and tap <span className="font-semibold">"Add to Home Screen"</span></li>
                       <li>Tap <span className="font-semibold">"Add"</span> to confirm</li>
                     </ol>

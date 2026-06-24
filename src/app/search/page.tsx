@@ -336,7 +336,7 @@ export default function SearchPage() {
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                           <div className="absolute bottom-2 left-2 right-2">
                             <div className="flex items-center gap-2 text-white text-sm">
-                              <span className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded text-xs">
+                              <span className="px-2 py-1 bg-primary-500/20 text-primary-300 rounded text-xs">
                                 {game.category}
                               </span>
                             </div>
@@ -351,13 +351,7 @@ export default function SearchPage() {
                           </p>
                           <div className="flex items-center justify-between text-sm text-dark-300">
                             <div className="flex items-center gap-1">
-                              <span className={`px-2 py-1 rounded text-xs ${
-                                game.platform === 'PC' 
-                                  ? 'bg-blue-500/20 text-blue-400'
-                                  : game.platform === 'Mobile'
-                                  ? 'bg-green-500/20 text-green-400'
-                                  : 'bg-orange-500/20 text-orange-400'
-                              }`}>
+                              <span className="px-2 py-1 rounded text-xs bg-primary-500/20 text-primary-400">
                                 {game.platform}
                               </span>
                             </div>

@@ -104,7 +104,7 @@ export default function LiveTimer({
   if (isExpired) {
     return (
       <div className={`text-red-400 font-medium ${className}`}>
-        <span className="text-red-500">⏰</span> {getExpiredText()}
+        {getExpiredText()}
       </div>
     );
   }
@@ -112,7 +112,7 @@ export default function LiveTimer({
   if (variant === 'compact') {
     return (
       <div className={`text-sm ${className}`}>
-        <span className="text-blue-400">⏱️</span> {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m
+        {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m
       </div>
     );
   }
@@ -123,24 +123,20 @@ export default function LiveTimer({
         <div className="text-xs text-dark-400">{getTimeRemainingText()}</div>
         <div className="flex items-center space-x-2 text-sm">
           <div className="flex items-center space-x-1">
-            <span className="text-blue-400">📅</span>
             <span className="font-mono">{timeLeft.days}</span>
             <span className="text-xs text-dark-400">
               {timeLeft.days === 1 ? 'siku' : 'siku'}
             </span>
           </div>
           <div className="flex items-center space-x-1">
-            <span className="text-green-400">🕐</span>
             <span className="font-mono">{timeLeft.hours.toString().padStart(2, '0')}</span>
             <span className="text-xs text-dark-400">saa</span>
           </div>
           <div className="flex items-center space-x-1">
-            <span className="text-yellow-400">⏰</span>
             <span className="font-mono">{timeLeft.minutes.toString().padStart(2, '0')}</span>
             <span className="text-xs text-dark-400">dakika</span>
           </div>
           <div className="flex items-center space-x-1">
-            <span className="text-red-400">⏱️</span>
             <span className="font-mono">{timeLeft.seconds.toString().padStart(2, '0')}</span>
             <span className="text-xs text-dark-400">sekunde</span>
           </div>
@@ -168,7 +164,6 @@ export default function LiveTimer({
       <div className="flex items-center space-x-3 text-sm">
         {timeLeft.days > 0 && (
           <div className="flex items-center space-x-1">
-            <span className="text-blue-400">📅</span>
             <span className="font-mono font-semibold">{timeLeft.days}</span>
             <span className="text-xs text-dark-400">
               {timeLeft.days === 1 ? 'siku' : 'siku'}
@@ -176,17 +171,14 @@ export default function LiveTimer({
           </div>
         )}
         <div className="flex items-center space-x-1">
-          <span className="text-green-400">🕐</span>
           <span className="font-mono font-semibold">{timeLeft.hours.toString().padStart(2, '0')}</span>
           <span className="text-xs text-dark-400">saa</span>
         </div>
         <div className="flex items-center space-x-1">
-          <span className="text-yellow-400">⏰</span>
           <span className="font-mono font-semibold">{timeLeft.minutes.toString().padStart(2, '0')}</span>
           <span className="text-xs text-dark-400">dakika</span>
         </div>
         <div className="flex items-center space-x-1">
-          <span className="text-red-400">⏱️</span>
           <span className="font-mono font-semibold">{timeLeft.seconds.toString().padStart(2, '0')}</span>
           <span className="text-xs text-dark-400">sekunde</span>
         </div>

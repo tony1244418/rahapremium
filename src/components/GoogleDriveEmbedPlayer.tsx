@@ -355,7 +355,7 @@ export const GoogleDriveEmbedPlayer: React.FC<GoogleDriveEmbedPlayerProps> = ({
                 <p className="text-gray-300 mb-6">{error}</p>
                 
                 <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-4 mb-6 text-left">
-                  <h4 className="text-blue-400 font-medium mb-2">🔧 Solutions:</h4>
+                  <h4 className="text-blue-400 font-medium mb-2">Solutions:</h4>
                   <ul className="text-sm text-gray-300 space-y-1">
                     <li>• Open the video directly in a new tab</li>
                     <li>• Check if the video URL is accessible</li>

@@ -311,13 +311,11 @@ Thank you for using RahaPremium!
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 text-sm">
                       {subscription.isRenewal && (
                         <div className="flex items-center space-x-2 text-blue-400">
-                          <span>🔄</span>
                           <span>{t('renewal')}</span>
                         </div>
                       )}
                       {subscription.isUpgrade && (
-                        <div className="flex items-center space-x-2 text-purple-400">
-                          <span>⬆️</span>
+                        <div className="flex items-center space-x-2 text-primary-400">
                           <span>{t('upgrade')}</span>
                         </div>
                       )}
@@ -337,10 +335,10 @@ Thank you for using RahaPremium!
                         </div>
                         
                         {/* Live Countdown Timer for Active Subscriptions */}
-                        <div className="p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg">
+                        <div className="p-4 bg-gradient-to-r from-blue-500/10 to-primary-500/10 border border-blue-500/20 rounded-lg">
                           <div className="text-center mb-3">
                             <h4 className="text-sm font-semibold text-blue-400 mb-2">
-                              ⏰ {t('liveCountdown')}
+                              {t('liveCountdown')}
                             </h4>
                           </div>
                           <LiveTimer 

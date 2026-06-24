@@ -165,8 +165,8 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
                         </a>
                       )}
                       {socialSettings.socialInstagram && (
-                        <a href={socialSettings.socialInstagram} target="_blank" rel="noopener noreferrer" className="flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 text-dark-200 hover:text-pink-500 hover:bg-dark-800/50 group">
-                          <Instagram size={20} className="transition-colors duration-200 group-hover:text-pink-500" />
+                        <a href={socialSettings.socialInstagram} target="_blank" rel="noopener noreferrer" className="flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 text-dark-200 hover:text-primary-500 hover:bg-dark-800/50 group">
+                          <Instagram size={20} className="transition-colors duration-200 group-hover:text-primary-500" />
                           <span className="font-medium">Instagram</span>
                         </a>
                       )}

@@ -759,7 +759,7 @@ export const LiveStreamPlayer: React.FC<LiveStreamPlayerProps> = ({
                 <p className="text-gray-300 mb-2">{error}</p>
                 {channel.streamUrl.startsWith('http://') && (
                   <p className="text-yellow-400 text-sm mb-4">
-                    ⚠️ HTTP URLs may be blocked by browsers on HTTPS pages (mixed content). 
+                    HTTP URLs may be blocked by browsers on HTTPS pages (mixed content). 
                     Try accessing the site over HTTP or contact support.
                   </p>
                 )}

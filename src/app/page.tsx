@@ -505,7 +505,7 @@ export default function HomePage() {
               {tanzaniaGames.length > 0 && (
                 <ScrollSection
                   id="tanzania-games"
-                  title={<><span style={{ fontSize: '1.1em' }}>🇹🇿</span><span style={{ color: '#FFD700', fontWeight: 700 }}>{`Game za Tanzania`}</span></>}
+                  title={<><span style={{ color: '#FFD700', fontWeight: 700 }}>{`Game za Tanzania`}</span></>}
                   items={tanzaniaGames}
                   type="games"
                   seeAllHref="/games"

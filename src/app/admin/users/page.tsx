@@ -181,7 +181,7 @@ export default function AdminUsersPage() {
       const updatedUsers = await getAllUsers();
       setUsers(updatedUsers);
       
-      alert('✅ Direct subscription added successfully! User should see changes immediately.');
+      alert('Direct subscription added successfully! User should see changes immediately.');
     } catch (error) {
       console.error('Error adding subscription:', error);
       alert('Failed to add subscription');
@@ -551,10 +551,10 @@ export default function AdminUsersPage() {
                       
                       {/* Live Timer in User Details Modal */}
                       {selectedUser.subscription.isActive && (
-                        <div className="col-span-2 p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg">
+                        <div className="col-span-2 p-4 bg-gradient-to-r from-blue-500/10 to-primary-500/10 border border-blue-500/20 rounded-lg">
                           <div className="text-center mb-3">
                             <h4 className="text-sm font-semibold text-blue-400 mb-2">
-                              ⏰ {t('liveCountdown')}
+                              {t('liveCountdown')}
                             </h4>
                           </div>
                           <LiveTimer 

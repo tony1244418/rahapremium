@@ -220,7 +220,7 @@ export default function GameForm({ isOpen, onClose, onSubmit, editData, loading 
                   placeholder={`Paste custom HTML player code here, e.g.:\n<iframe src="https://..." allowfullscreen></iframe>`}
                 />
                 <p className="text-xs text-amber-400/80 mt-1">
-                  ⚠️ If filled, this HTML code will be used as the player instead of the Video URL above. Leave empty to use the URL.
+                  If filled, this HTML code will be used as the player instead of the Video URL above. Leave empty to use the URL.
                 </p>
               </div>
             </div>

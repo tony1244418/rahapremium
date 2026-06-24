@@ -197,12 +197,12 @@ export default function CDNTokenManagementPage() {
 
         {/* Next Auto-Refresh */}
         <div className="glass-effect rounded-xl p-4 border border-dark-700/50 flex items-center space-x-3">
-          <div className="p-2 rounded-lg bg-purple-500/10">
-            <RefreshCw size={18} className={`text-purple-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <div className="p-2 rounded-lg bg-primary-500/10">
+            <RefreshCw size={18} className={`text-primary-400 ${isRefreshing ? 'animate-spin' : ''}`} />
           </div>
           <div>
             <p className="text-xs text-dark-400 mb-0.5">Next Auto-Refresh</p>
-            <p className="text-sm font-semibold text-purple-400">
+            <p className="text-sm font-semibold text-primary-400">
               {isLoading ? '...' : (nextRefreshIn || '—')}
             </p>
           </div>

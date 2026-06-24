@@ -210,7 +210,7 @@ function AuthContent() {
               {qrStatus === 'claiming' && (
                 <>
                   <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: 'rgba(124,58,237,0.2)' }}>
-                    <Loader2 size={32} className="text-purple-400 animate-spin" />
+                    <Loader2 size={32} className="text-primary-400 animate-spin" />
                   </div>
                   <p className="text-dark-100 font-semibold text-lg">Connecting Device...</p>
                   <p className="text-dark-400 text-sm text-center">{qrMessage}</p>
@@ -363,7 +363,7 @@ export default function AuthPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-main-gradient flex items-center justify-center p-4">
-        <Loader2 className="animate-spin text-purple-400" size={48} />
+        <Loader2 className="animate-spin text-primary-400" size={48} />
       </div>
     }>
       <AuthContent />

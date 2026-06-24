@@ -472,21 +472,15 @@ export default function GameDetailPage() {
               {/* Game Category and Platform */}
               <div className="flex flex-wrap gap-2 mb-6">
                 {game.category && (
-                  <span className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-lg text-sm font-medium">
+                  <span className="px-3 py-1 bg-primary-500/20 text-primary-400 rounded-lg text-sm font-medium">
                     {game.category}
                   </span>
                 )}
                 {game.platform && (
-                  <span className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                    game.platform === 'PC' 
-                      ? 'bg-blue-500/20 text-blue-400'
-                      : game.platform === 'Mobile'
-                      ? 'bg-green-500/20 text-green-400'
-                      : 'bg-orange-500/20 text-orange-400'
-                  }`}>
-                    {game.platform === 'PC' && '🖥️ PC'}
-                    {game.platform === 'Mobile' && '📱 Mobile'}
-                    {game.platform === 'Both' && '🖥️📱 Both'}
+                  <span className="px-3 py-1 rounded-lg text-sm font-medium bg-primary-500/20 text-primary-400">
+                    {game.platform === 'PC' && 'PC'}
+                    {game.platform === 'Mobile' && 'Mobile'}
+                    {game.platform === 'Both' && 'Both'}
                   </span>
                 )}
               </div>

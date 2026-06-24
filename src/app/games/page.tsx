@@ -233,10 +233,10 @@ export default function GamesPage() {
                       if (count === 0) return null;
                       return (
                         <option key={platform} value={platform}>
-                          {platform === 'Windows' && '🪟 Windows'}
-                          {platform === 'Android' && '🤖 Android'}
-                          {platform === 'iOS' && '🍎 iOS'}
-                          {platform === 'Mobile' && '📱 Mobile'}
+                          {platform === 'Windows' && 'Windows'}
+                          {platform === 'Android' && 'Android'}
+                          {platform === 'iOS' && 'iOS'}
+                          {platform === 'Mobile' && 'Mobile'}
                           {' '}({count})
                         </option>
                       );
@@ -333,7 +333,6 @@ export default function GamesPage() {
                 >
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-bold flex items-center space-x-2" style={{ color: '#FFD700' }}>
-                      <span>🇹🇿</span>
                       <span>{language === 'sw' ? 'Game za Tanzania' : 'Tanzania Games'}</span>
                       <span className="text-sm font-normal text-dark-400">({tanzaniaGames.length})</span>
                     </h2>
@@ -377,7 +376,7 @@ export default function GamesPage() {
                                 {/* Tanzania Badge */}
                                 <div className="absolute top-2 right-2 z-10">
                                   <span className="px-2 py-1 rounded-lg text-xs font-bold backdrop-blur-sm shadow-lg" style={{ background: 'rgba(0,100,0,0.85)', color: '#FFD700' }}>
-                                    🇹🇿 Bongo Game
+                                    Bongo Game
                                   </span>
                                 </div>
                                 <div className="absolute bottom-4 left-4 right-4">
@@ -440,12 +439,12 @@ export default function GamesPage() {
                       <h2 className="text-xl font-bold text-dark-100 flex items-center space-x-2">
                         <Gamepad2 size={24} className="text-primary-400" />
                         <span>
-                          {platform === 'Windows' && '🪟 Windows Games'}
-                          {platform === 'Android' && '🤖 Android Games'}
-                          {platform === 'iOS' && '🍎 iOS Games'}
-                          {platform === 'Mobile' && '📱 Mobile Games'}
-                          {platform === 'PC' && '🖥️ PC Games'}
-                          {platform === 'Both' && '🖥️📱 Cross-Platform Games'}
+                          {platform === 'Windows' && 'Windows Games'}
+                          {platform === 'Android' && 'Android Games'}
+                          {platform === 'iOS' && 'iOS Games'}
+                          {platform === 'Mobile' && 'Mobile Games'}
+                          {platform === 'PC' && 'PC Games'}
+                          {platform === 'Both' && 'Cross-Platform Games'}
                         </span>
                         <span className="text-sm font-normal text-dark-400">
                           ({platformGames.length})
@@ -489,26 +488,20 @@ export default function GamesPage() {
                                 {/* Platform Badge on Thumbnail */}
                                 {game.platform && (
                                   <div className="absolute top-2 right-2">
-                                    <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${
-                                      game.platform === 'PC' || game.platform === 'Windows'
-                                        ? 'bg-blue-500/90 text-white'
-                                        : game.platform === 'Mobile' || game.platform === 'Android' || game.platform === 'iOS'
-                                        ? 'bg-green-500/90 text-white'
-                                        : 'bg-orange-500/90 text-white'
-                                    }`}>
-                                      {game.platform === 'PC' && '🖥️ PC'}
-                                      {game.platform === 'Windows' && '🪟 Windows'}
-                                      {game.platform === 'Mobile' && '📱 Mobile'}
-                                      {game.platform === 'Android' && '🤖 Android'}
-                                      {game.platform === 'iOS' && '🍎 iOS'}
-                                      {game.platform === 'Both' && '🖥️📱 Both'}
+                                    <span className="px-2 py-1 rounded-lg text-xs font-semibold bg-primary-500/90 text-white">
+                                      {game.platform === 'PC' && 'PC'}
+                                      {game.platform === 'Windows' && 'Windows'}
+                                      {game.platform === 'Mobile' && 'Mobile'}
+                                      {game.platform === 'Android' && 'Android'}
+                                      {game.platform === 'iOS' && 'iOS'}
+                                      {game.platform === 'Both' && 'Both'}
                                     </span>
                                   </div>
                                 )}
                                 {/* Mode Badge */}
                                 {game.mode && (
                                   <div className="absolute bottom-2 left-2 z-10">
-                                    <span className="px-2 py-1 rounded-lg text-xs font-semibold bg-purple-500/80 text-white backdrop-blur-sm">
+                                    <span className="px-2 py-1 rounded-lg text-xs font-semibold bg-primary-500/80 text-white backdrop-blur-sm">
                                       {t(game.mode.toLowerCase())}
                                     </span>
                                   </div>
@@ -526,7 +519,7 @@ export default function GamesPage() {
                                 {/* Game Category - Hide when any filter is active (redundant) */}
                                 {game.category && selectedCategory === 'all' && selectedMode === 'all' && selectedPlatform === 'all' && !showFreeOnly && (
                                   <div className="mb-3">
-                                    <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs font-medium">
+                                    <span className="px-2 py-1 bg-primary-500/20 text-primary-400 rounded text-xs font-medium">
                                       {game.category}
                                     </span>
                                   </div>
@@ -609,26 +602,20 @@ export default function GamesPage() {
                         {/* Platform Badge on Thumbnail */}
                         {game.platform && (
                           <div className="absolute top-2 right-2 z-10">
-                            <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${
-                              game.platform === 'PC' || game.platform === 'Windows'
-                                ? 'bg-blue-500/90 text-white'
-                                : game.platform === 'Mobile' || game.platform === 'Android' || game.platform === 'iOS'
-                                ? 'bg-green-500/90 text-white'
-                                : 'bg-orange-500/90 text-white'
-                            }`}>
-                              {game.platform === 'PC' && '🖥️ PC'}
-                              {game.platform === 'Windows' && '🪟 Windows'}
-                              {game.platform === 'Mobile' && '📱 Mobile'}
-                              {game.platform === 'Android' && '🤖 Android'}
-                              {game.platform === 'iOS' && '🍎 iOS'}
-                              {game.platform === 'Both' && '🖥️📱 Both'}
+                            <span className="px-2 py-1 rounded-lg text-xs font-semibold bg-primary-500/90 text-white">
+                              {game.platform === 'PC' && 'PC'}
+                              {game.platform === 'Windows' && 'Windows'}
+                              {game.platform === 'Mobile' && 'Mobile'}
+                              {game.platform === 'Android' && 'Android'}
+                              {game.platform === 'iOS' && 'iOS'}
+                              {game.platform === 'Both' && 'Both'}
                             </span>
                           </div>
                         )}
                         {/* Mode Badge */}
                         {game.mode && (
                           <div className="absolute bottom-2 left-2 z-10">
-                            <span className="px-2 py-1 rounded-lg text-xs font-semibold bg-purple-500/80 text-white backdrop-blur-sm">
+                            <span className="px-2 py-1 rounded-lg text-xs font-semibold bg-primary-500/80 text-white backdrop-blur-sm">
                               {t(game.mode.toLowerCase())}
                             </span>
                           </div>
@@ -646,7 +633,7 @@ export default function GamesPage() {
                         {/* Game Category - Hide when any filter is active (redundant) */}
                         {game.category && selectedCategory === 'all' && selectedMode === 'all' && selectedPlatform === 'all' && !showFreeOnly && (
                           <div className="mb-3">
-                            <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs font-medium">
+                            <span className="px-2 py-1 bg-primary-500/20 text-primary-400 rounded text-xs font-medium">
                               {game.category}
                             </span>
                           </div>

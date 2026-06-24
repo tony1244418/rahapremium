@@ -174,7 +174,7 @@ export default function QrWaitPage() {
 
           {/* Background Ambient Orbs */}
           <div className="absolute top-[-50px] left-[-50px] w-48 h-48 bg-blue-600/20 rounded-full blur-[60px] pointer-events-none" />
-          <div className="absolute bottom-[-50px] right-[-50px] w-48 h-48 bg-purple-600/20 rounded-full blur-[60px] pointer-events-none" />
+          <div className="absolute bottom-[-50px] right-[-50px] w-48 h-48 bg-primary-600/20 rounded-full blur-[60px] pointer-events-none" />
         </div>
 
       </div>

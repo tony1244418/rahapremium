@@ -179,7 +179,7 @@ export default function BottomNavigation() {
                 <div className="flex items-center space-x-3">
                   <div
                     className="w-9 h-9 rounded-xl flex items-center justify-center"
-                    style={{ background: 'linear-gradient(135deg, #1e6bef, #7c3aed)' }}
+                    style={{ background: 'linear-gradient(135deg, #1e6bef, #1e40af)' }}
                   >
                     <Users size={18} className="text-white" />
                   </div>
@@ -236,8 +236,8 @@ export default function BottomNavigation() {
                         style={{ background: 'rgba(255,255,255,0.05)' }}
                         onClick={() => setIsFollowModalOpen(false)}
                       >
-                        <div className="w-10 h-10 rounded-xl bg-pink-500/20 flex items-center justify-center group-hover:bg-pink-500/30 transition-colors">
-                          <Instagram size={20} className="text-pink-400" />
+                        <div className="w-10 h-10 rounded-xl bg-primary-500/20 flex items-center justify-center group-hover:bg-primary-500/30 transition-colors">
+                          <Instagram size={20} className="text-primary-400" />
                         </div>
                         <div>
                           <span className="text-white font-semibold text-sm block">Instagram</span>

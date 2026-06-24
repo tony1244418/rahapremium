@@ -87,8 +87,8 @@ export default function AdminDashboard() {
       title: 'Monthly Revenue',
       value: `TSH ${(analytics?.monthlyRevenue || 0).toLocaleString()}`,
       icon: TrendingUp,
-      color: 'text-purple-400',
-      bgColor: 'bg-purple-500/20',
+      color: 'text-primary-400',
+      bgColor: 'bg-primary-500/20',
       href: '/admin/payments'
     },
     {
@@ -103,16 +103,16 @@ export default function AdminDashboard() {
       title: 'TV Series',
       value: analytics?.totalSeries || 0,
       icon: Tv,
-      color: 'text-indigo-400',
-      bgColor: 'bg-indigo-500/20',
+      color: 'text-primary-400',
+      bgColor: 'bg-primary-500/20',
       href: '/admin/content'
     },
     {
       title: 'Pending Payments',
       value: analytics?.pendingPayments || 0,
       icon: Clock,
-      color: 'text-orange-400',
-      bgColor: 'bg-orange-500/20',
+      color: 'text-primary-400',
+      bgColor: 'bg-primary-500/20',
       href: '/admin/payments'
     },
     {
@@ -138,14 +138,14 @@ export default function AdminDashboard() {
       description: 'Upload new games',
       icon: Gamepad2,
       href: '/admin/content?action=add&tab=games',
-      color: 'bg-purple-gradient'
+      color: 'bg-primary-gradient'
     },
     {
       title: 'Content Management',
       description: 'Manage existing content and categories',
       icon: Tv,
       href: '/admin/content',
-      color: 'bg-indigo-gradient'
+      color: 'bg-primary-gradient'
     },
     {
       title: 'Manage Users',
@@ -295,10 +295,10 @@ export default function AdminDashboard() {
               
               <div className="glass-effect rounded-lg p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-purple-400 rounded-full animate-pulse"></div>
+                  <div className="w-3 h-3 bg-primary-400 rounded-full animate-pulse"></div>
                   <div>
                     <p className="text-sm font-medium text-dark-100">Content</p>
-                    <p className="text-xs text-purple-400">Synced</p>
+                    <p className="text-xs text-primary-400">Synced</p>
                   </div>
                 </div>
               </div>
@@ -310,12 +310,12 @@ export default function AdminDashboard() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="glass-effect rounded-lg p-6 border border-orange-500/50"
+              className="glass-effect rounded-lg p-6 border border-primary-500/50"
             >
               <div className="flex items-start space-x-4">
-                <AlertCircle size={24} className="text-orange-400 flex-shrink-0 mt-1" />
+                <AlertCircle size={24} className="text-primary-400 flex-shrink-0 mt-1" />
                 <div>
-                  <h3 className="text-lg font-semibold text-orange-400 mb-2">
+                  <h3 className="text-lg font-semibold text-primary-400 mb-2">
                     Pending Payments Alert
                   </h3>
                   <p className="text-dark-300 text-sm mb-4">

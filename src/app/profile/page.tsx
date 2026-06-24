@@ -341,10 +341,10 @@ export default function ProfilePage() {
                     className="w-full px-4 py-4 bg-dark-800 border border-dark-600 rounded-xl text-dark-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 appearance-none cursor-pointer pr-12"
                   >
                     <option value="sw" className="bg-dark-800 text-dark-100">
-                      🇹🇿 Kiswahili
+                      Kiswahili
                     </option>
                     <option value="en" className="bg-dark-800 text-dark-100">
-                      🇺🇸 English
+                      English
                     </option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">

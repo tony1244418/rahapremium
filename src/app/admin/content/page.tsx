@@ -522,8 +522,8 @@ export default function AdminContentPage() {
       label: 'Games',
       icon: Gamepad2,
       count: games.length,
-      color: 'text-purple-400',
-      bgColor: 'bg-purple-500/20'
+      color: 'text-primary-400',
+      bgColor: 'bg-primary-500/20'
     }
   ];
 
@@ -894,7 +894,7 @@ export default function AdminContentPage() {
                                 </>
                               )}
                               {'mode' in item && item.mode && (
-                                <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 rounded text-xs">
+                                <span className="px-2 py-0.5 bg-primary-500/20 text-primary-400 rounded text-xs">
                                   {item.mode}
                                 </span>
                               )}
@@ -995,8 +995,8 @@ export default function AdminContentPage() {
               
               <div className="glass-effect rounded-lg p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                    <Upload size={20} className="text-purple-400" />
+                  <div className="w-10 h-10 bg-primary-500/20 rounded-lg flex items-center justify-center">
+                    <Upload size={20} className="text-primary-400" />
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-dark-100">{stats.totalContent}</p>

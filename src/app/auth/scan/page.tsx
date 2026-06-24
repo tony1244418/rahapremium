@@ -843,9 +843,9 @@ function QrScanContent() {
             </div>
 
             <div className="features-row">
-              <div className="feature-chip"><span>⚡</span> Instant</div>
-              <div className="feature-chip"><span>🔒</span> Private</div>
-              <div className="feature-chip"><span>📱</span> Any Device</div>
+              <div className="feature-chip">Instant</div>
+              <div className="feature-chip">Private</div>
+              <div className="feature-chip">Any Device</div>
             </div>
 
             <div className="mt-8 text-center">

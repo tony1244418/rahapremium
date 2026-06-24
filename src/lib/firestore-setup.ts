@@ -125,7 +125,7 @@ export async function setupFirestore(): Promise<SetupResult> {
     // Ensure network is enabled
     try {
       await enableNetwork(db);
-      details.push('✅ Network connection enabled');
+      details.push('Network connection enabled');
     } catch (error) {
       console.warn('Network already enabled or error:', error);
     }
@@ -136,10 +136,10 @@ export async function setupFirestore(): Promise<SetupResult> {
       return {
         success: false,
         message: 'Cannot connect to Firestore. Please check your internet connection and try again.',
-        details: ['❌ Connection test failed']
+        details: ['Connection test failed']
       };
     }
-    details.push('✅ Connection test passed');
+    details.push('Connection test passed');
 
     // Check if admin already exists with retry
     const adminDoc = await retryOperation(() => 
@@ -149,9 +149,9 @@ export async function setupFirestore(): Promise<SetupResult> {
       await retryOperation(() => 
         setDoc(doc(db, 'admins', sampleAdmin.uid), sampleAdmin)
       );
-      details.push('✅ Created sample admin user');
+      details.push('Created sample admin user');
     } else {
-      details.push('ℹ️ Admin user already exists');
+      details.push('Admin user already exists');
     }
 
     // Check if test user already exists with retry
@@ -162,9 +162,9 @@ export async function setupFirestore(): Promise<SetupResult> {
       await retryOperation(() => 
         setDoc(doc(db, 'users', sampleUser.uid), sampleUser)
       );
-      details.push('✅ Created sample test user');
+      details.push('Created sample test user');
     } else {
-      details.push('ℹ️ Test user already exists');
+      details.push('Test user already exists');
     }
 
     // Check if sample content exists with retry
@@ -175,9 +175,9 @@ export async function setupFirestore(): Promise<SetupResult> {
       await retryOperation(() => 
         setDoc(doc(collection(db, 'movies')), sampleMovie)
       );
-      details.push('✅ Created sample movie');
+      details.push('Created sample movie');
     } else {
-      details.push('ℹ️ Movies collection already has content');
+      details.push('Movies collection already has content');
     }
 
     const seriesSnapshot = await retryOperation(() => 
@@ -187,9 +187,9 @@ export async function setupFirestore(): Promise<SetupResult> {
       await retryOperation(() => 
         setDoc(doc(collection(db, 'series')), sampleSeries)
       );
-      details.push('✅ Created sample series');
+      details.push('Created sample series');
     } else {
-      details.push('ℹ️ Series collection already has content');
+      details.push('Series collection already has content');
     }
 
     const storiesSnapshot = await retryOperation(() => 
@@ -199,9 +199,9 @@ export async function setupFirestore(): Promise<SetupResult> {
       await retryOperation(() => 
         setDoc(doc(collection(db, 'stories')), sampleStory)
       );
-      details.push('✅ Created sample story');
+      details.push('Created sample story');
     } else {
-      details.push('ℹ️ Stories collection already has content');
+      details.push('Stories collection already has content');
     }
 
     return {

@@ -477,14 +477,14 @@ export default function AdminSettingsPage() {
       time: '1 hour ago',
       description: '2FA enforced for all elevated roles',
       icon: ShieldCheck,
-      accent: 'text-purple-400'
+      accent: 'text-primary-400'
     },
     {
       title: 'Content sync failed & retried',
       time: '3 hours ago',
       description: 'Episode metadata refreshed after retry attempt',
       icon: RefreshCw,
-      accent: 'text-orange-400'
+      accent: 'text-primary-400'
     }
   ];
 
@@ -576,7 +576,7 @@ export default function AdminSettingsPage() {
           healthyPercent >= 97
             ? 'from-green-500/20 via-emerald-500/10 to-transparent'
             : healthyPercent >= 90
-            ? 'from-yellow-500/20 via-orange-500/10 to-transparent'
+            ? 'from-yellow-500/20 via-primary-500/10 to-transparent'
             : 'from-red-500/20 via-rose-500/10 to-transparent'
       },
       {
@@ -599,8 +599,8 @@ export default function AdminSettingsPage() {
             ? `${automationSummary.totalChecked.toLocaleString()} assets scanned`
             : 'Awaiting first automation run',
         icon: RefreshCw,
-        accent: 'text-purple-400',
-        gradient: 'from-purple-500/20 via-indigo-500/10 to-transparent'
+        accent: 'text-primary-400',
+        gradient: 'from-primary-500/20 via-primary-500/10 to-transparent'
       }
     ];
   }, [analytics, analyticsLoading, contentSyncStatus]);
@@ -632,7 +632,7 @@ export default function AdminSettingsPage() {
       const result = await updateAdminToggleSetting(key, nextValue, adminUser?.uid ?? null);
       setToggleLastSavedAt(formatTimestamp(result.updatedAt));
       const label = definition?.label ?? 'Setting';
-      setStatusMessage(`${label} ${nextValue ? 'enabled' : 'disabled'} and synced ✅`);
+      setStatusMessage(`${label} ${nextValue ? 'enabled' : 'disabled'} and synced`);
     } catch (error) {
       console.error(`Error updating toggle "${key}":`, error);
       setToggles((prev) => ({ ...prev, [key]: currentValue }));
@@ -653,7 +653,7 @@ export default function AdminSettingsPage() {
       await updateControlCenterSettings(settingsForm);
       const now = new Date();
       setLastSavedAt(formatTimestamp(now));
-      setStatusMessage('Control center settings saved successfully ✅');
+      setStatusMessage('Control center settings saved successfully');
     } catch (error) {
       console.error('Error saving control center settings:', error);
       setStatusMessage('Failed to save control center settings. Please try again.');
@@ -705,7 +705,7 @@ export default function AdminSettingsPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="relative overflow-hidden rounded-3xl border border-dark-700/40 bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-transparent p-6 sm:p-8 glass-effect"
+            className="relative overflow-hidden rounded-3xl border border-dark-700/40 bg-gradient-to-br from-blue-500/10 via-primary-500/5 to-transparent p-6 sm:p-8 glass-effect"
           >
             <div className="absolute inset-0 pointer-events-none">
               <div className="absolute -top-24 -right-10 h-48 w-48 rounded-full bg-primary-500/20 blur-3xl" />

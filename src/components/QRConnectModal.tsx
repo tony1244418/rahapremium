@@ -342,11 +342,11 @@ export default function QRConnectModal({ isOpen, onClose, initialTab = 'myqr' }:
             className="fixed inset-0 z-[9991] flex items-center justify-center p-4"
             onClick={e => e.stopPropagation()}
           >
-            <div className="w-full max-w-sm rounded-3xl overflow-hidden" style={{ background: 'rgba(10,10,26,0.98)', border: '1px solid rgba(167,139,250,0.2)', boxShadow: '0 0 60px rgba(167,139,250,0.15)' }}>
+            <div className="w-full max-w-sm rounded-3xl overflow-hidden" style={{ background: 'rgba(10,10,26,0.98)', border: '1px solid rgba(30,107,239,0.2)', boxShadow: '0 0 60px rgba(30,107,239,0.15)' }}>
               {/* Header */}
               <div className="flex items-center justify-between px-6 pt-6 pb-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}>
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1e6bef, #1e40af)' }}>
                     <QrCode size={16} className="text-white" />
                   </div>
                   <span className="text-white font-bold text-lg">Device Connect</span>
@@ -376,8 +376,8 @@ export default function QRConnectModal({ isOpen, onClose, initialTab = 'myqr' }:
 
                     {/* Timer */}
                     <div className="flex items-center gap-2 text-xs">
-                      <div className={`w-2 h-2 rounded-full ${timeLeft > 60 ? 'bg-green-400' : 'bg-orange-400'} animate-pulse`} />
-                      <span className="text-white/50">Expires in <span className={`font-bold ${timeLeft > 60 ? 'text-green-400' : 'text-orange-400'}`}>{formatTime(timeLeft)}</span></span>
+                      <div className={`w-2 h-2 rounded-full ${timeLeft > 60 ? 'bg-green-400' : 'bg-primary-400'} animate-pulse`} />
+                      <span className="text-white/50">Expires in <span className={`font-bold ${timeLeft > 60 ? 'text-green-400' : 'text-primary-400'}`}>{formatTime(timeLeft)}</span></span>
                     </div>
 
                     {/* Action buttons */}
@@ -389,16 +389,16 @@ export default function QRConnectModal({ isOpen, onClose, initialTab = 'myqr' }:
                       </button>
                       <button onClick={handleShare}
                         className="flex-1 py-3 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold text-white transition-all"
-                        style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}>
+                        style={{ background: 'linear-gradient(135deg, #1e6bef, #1e40af)' }}>
                         <Share2 size={14} /> Share
                       </button>
                     </div>
 
                     {/* Device limit info */}
-                    <div className="w-full rounded-xl p-3" style={{ background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.15)' }}>
+                    <div className="w-full rounded-xl p-3" style={{ background: 'rgba(30,107,239,0.08)', border: '1px solid rgba(30,107,239,0.15)' }}>
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-white/60 text-xs">Active Devices</span>
-                        <span className="text-purple-400 text-xs font-bold">{activeSessions.length}/{getDeviceLimit()}</span>
+                        <span className="text-primary-400 text-xs font-bold">{activeSessions.length}/{getDeviceLimit()}</span>
                       </div>
                       <div className="space-y-1.5">
                         {activeSessions.length === 0 && <p className="text-white/30 text-xs text-center py-1">No active sessions</p>}
@@ -431,7 +431,7 @@ export default function QRConnectModal({ isOpen, onClose, initialTab = 'myqr' }:
                       <div className="w-full flex flex-col gap-3">
                         <button onClick={() => fileInputRef.current?.click()}
                           className="w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-white font-bold text-base transition-all"
-                          style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}>
+                          style={{ background: 'linear-gradient(135deg, #1e6bef, #1e40af)' }}>
                           <Upload size={22} /> Upload QR Image
                         </button>
                         <input 
@@ -450,16 +450,16 @@ export default function QRConnectModal({ isOpen, onClose, initialTab = 'myqr' }:
                           <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
                           {/* Scan overlay */}
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-48 h-48 border-2 border-purple-400 rounded-2xl relative">
-                              <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-purple-400 rounded-tl-lg" />
-                              <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-purple-400 rounded-tr-lg" />
-                              <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-purple-400 rounded-bl-lg" />
-                              <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-purple-400 rounded-br-lg" />
+                            <div className="w-48 h-48 border-2 border-primary-400 rounded-2xl relative">
+                              <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-primary-400 rounded-tl-lg" />
+                              <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-primary-400 rounded-tr-lg" />
+                              <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-primary-400 rounded-bl-lg" />
+                              <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-primary-400 rounded-br-lg" />
                               <motion.div
                                 animate={{ top: ['0%', '100%', '0%'] }}
                                 transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                                className="absolute left-0 right-0 h-0.5 bg-purple-400"
-                                style={{ boxShadow: '0 0 8px rgba(167,139,250,0.8)' }}
+                                className="absolute left-0 right-0 h-0.5 bg-primary-400"
+                                style={{ boxShadow: '0 0 8px rgba(30,107,239,0.8)' }}
                               />
                             </div>
                           </div>
@@ -495,7 +495,7 @@ export default function QRConnectModal({ isOpen, onClose, initialTab = 'myqr' }:
                         <div className="flex flex-col gap-3">
                           <button onClick={() => setScanStatus('idle')}
                             className="w-full py-3 rounded-xl text-white font-semibold text-sm"
-                            style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}>
+                            style={{ background: 'linear-gradient(135deg, #1e6bef, #1e40af)' }}>
                             Try Again
                           </button>
                           <button onClick={() => fileInputRef.current?.click()}

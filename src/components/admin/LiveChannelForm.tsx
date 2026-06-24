@@ -329,7 +329,7 @@ export default function LiveChannelForm({ isOpen, onClose, onSubmit, editData, l
             {/* DRM Fields — shown only when DRM is selected */}
             {formData.linkType === 'drm' && (
               <div className="bg-dark-900 border border-primary-500/30 rounded-xl p-4 space-y-4">
-                <p className="text-sm font-semibold text-primary-400 flex items-center gap-2">🔐 ClearKey DRM Settings</p>
+                <p className="text-sm font-semibold text-primary-400 flex items-center gap-2">ClearKey DRM Settings</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-400 mb-1">DRM Key ID (KID)</label>
@@ -371,7 +371,7 @@ export default function LiveChannelForm({ isOpen, onClose, onSubmit, editData, l
                   rows={4}
                   placeholder={`<iframe src="https://..." allowfullscreen></iframe>`}
                 />
-                <p className="mt-1 text-xs text-amber-400/80">⚠️ This HTML embed code will be used as the player instead of the Stream URL.</p>
+                <p className="mt-1 text-xs text-amber-400/80">This HTML embed code will be used as the player instead of the Stream URL.</p>
               </div>
             )}
 

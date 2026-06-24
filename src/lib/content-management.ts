@@ -714,11 +714,11 @@ export const formatReadTime = (minutes: number) => {
 
 export const getContentTypeIcon = (type: 'movie' | 'series' | 'story' | 'game') => {
   switch (type) {
-    case 'movie': return '🎬';
-    case 'series': return '📺';
-    case 'story': return '📖';
-    case 'game': return '🎮';
-    default: return '📄';
+    case 'movie': return '';
+    case 'series': return '';
+    case 'story': return '';
+    case 'game': return '';
+    default: return '';
   }
 };
 

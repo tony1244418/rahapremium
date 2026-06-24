@@ -416,7 +416,7 @@ export default function AdminAdultGroupsPage() {
                         type="text"
                         value={formData.icon}
                         onChange={(e) => handleInputChange('icon', e.target.value)}
-                        placeholder="e.g., 🔥 or Users"
+                        placeholder="e.g., Users"
                         className="form-input"
                       />
                     </div>

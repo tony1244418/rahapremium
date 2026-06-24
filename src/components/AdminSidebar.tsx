@@ -104,7 +104,7 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
       icon: AlertCircle,
       label: 'Pending Payments',
       href: '/admin/payments?filter=pending',
-      color: 'text-orange-400'
+      color: 'text-primary-400'
     },
     {
       icon: Users,

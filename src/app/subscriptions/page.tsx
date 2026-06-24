@@ -126,7 +126,7 @@ function SubscriptionsContent() {
     CHUMA:   'from-gray-400 to-gray-600',
     DHAHABU: 'from-yellow-400 to-yellow-600',
     ALMASI:  'from-blue-400 to-blue-600',
-    MALKIA:  'from-purple-500 to-purple-700',
+    MALKIA:  'from-primary-500 to-primary-700',
   };
 
   // Phone number validation function
@@ -470,10 +470,10 @@ function SubscriptionsContent() {
               
               {/* Live Countdown Timer */}
               {subscriptionStatus.endDate && (
-                <div className="mt-4 p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg">
+                <div className="mt-4 p-4 bg-gradient-to-r from-blue-500/10 to-primary-500/10 border border-blue-500/20 rounded-lg">
                   <div className="text-center mb-3">
                     <h4 className="text-sm font-semibold text-blue-400 mb-2">
-                      ⏰ {t('liveCountdown')}
+                      {t('liveCountdown')}
                     </h4>
                   </div>
                   <LiveTimer 
@@ -770,7 +770,7 @@ function SubscriptionsContent() {
                 {/* Payment Error */}
                 {paymentError && (
                   <div className="p-4 rounded-lg bg-red-500/20 border border-red-500/50">
-                    <p className="text-sm text-red-400 font-medium mb-1">❌ Hitilafu ya Malipo</p>
+                    <p className="text-sm text-red-400 font-medium mb-1">Hitilafu ya Malipo</p>
                     <p className="text-xs text-red-300">{paymentError}</p>
                   </div>
                 )}
@@ -798,7 +798,6 @@ function SubscriptionsContent() {
                 {paymentRequest && (
                   <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-4 mb-4">
                     <div className="flex items-start space-x-3">
-                      <span className="text-lg">💰</span>
                       <div className="text-sm text-yellow-200">
                         <strong>Hakikisha una salio la kutosha kwenye simu yako kabla ya kuthibitisha.</strong>
                       </div>
@@ -810,9 +809,9 @@ function SubscriptionsContent() {
                 {paymentRequest && (
                   <div className="text-center text-sm text-dark-400">
                     <div className="space-y-2">
-                      <p>📱 Angalia simu yako kwa ombi la malipo</p>
-                      <p>💳 Ingiza PIN yako ya simu kuidhinisha</p>
-                      <p>⏳ Subiri uthibitisho wa malipo</p>
+                      <p>Angalia simu yako kwa ombi la malipo</p>
+                      <p>Ingiza PIN yako ya simu kuidhinisha</p>
+                      <p>Subiri uthibitisho wa malipo</p>
                     </div>
                     <p className="mt-3 text-xs text-dark-500">Usajili wako utaamilishwa mara malipo yakikamilika.</p>
                     {pollingInterval && (

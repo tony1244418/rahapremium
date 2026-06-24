@@ -630,7 +630,7 @@ export default function SeasonsManager({ isOpen, onClose, series }: SeasonsManag
                       placeholder="https://vz-efe8986b-460.b-cdn.net/00dfddf1-9155-4a66-a192-fef3ea3202ff/original"
                     />
                     <p className="text-xs text-dark-400 mt-1">
-                      💡 Bunny CDN direct download URL. Enables direct downloads without CDN blocking.
+                      Bunny CDN direct download URL. Enables direct downloads without CDN blocking.
                     </p>
                   </div>
                   <div>
@@ -736,7 +736,7 @@ export default function SeasonsManager({ isOpen, onClose, series }: SeasonsManag
                       placeholder="https://vz-efe8986b-460.b-cdn.net/00dfddf1-9155-4a66-a192-fef3ea3202ff/original"
                     />
                     <p className="text-xs text-dark-400 mt-1">
-                      💡 Bunny CDN direct download URL. Enables direct downloads without CDN blocking.
+                      Bunny CDN direct download URL. Enables direct downloads without CDN blocking.
                     </p>
                   </div>
                   <div>

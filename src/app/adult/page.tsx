@@ -158,7 +158,7 @@ export default function AdultContentPage() {
             )}
             {socialSettings.socialInstagram && (
               <a href={socialSettings.socialInstagram} target="_blank" rel="noopener noreferrer"
-                className="w-8 h-8 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 hover:bg-pink-500/20 hover:text-pink-300 transition-all duration-200"
+                className="w-8 h-8 rounded-xl bg-primary-500/10 border border-primary-500/20 flex items-center justify-center text-primary-400 hover:bg-primary-500/20 hover:text-primary-300 transition-all duration-200"
                 title="Instagram">
                 <Instagram size={15} />
               </a>

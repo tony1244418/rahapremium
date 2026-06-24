@@ -135,7 +135,7 @@ function AdminLoginContent() {
               href="/"
               className="text-sm text-dark-400 hover:text-primary-400 transition-colors"
             >
-              ← Back to Homepage
+              Back to Homepage
             </a>
           </div>
         </form>

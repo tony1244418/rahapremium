@@ -250,7 +250,7 @@ export default function AdminAnalyticsPage() {
     CHUMA: 'bg-gray-500',
     DHAHABU: 'bg-yellow-400',
     ALMASI: 'bg-blue-500',
-    MALKIA: 'bg-purple-500'
+    MALKIA: 'bg-primary-500'
   };
 
   const packageLabels = {
@@ -354,10 +354,10 @@ export default function AdminAnalyticsPage() {
               className="glass-effect rounded-lg p-4"
             >
               <div className="flex items-center justify-between mb-2">
-                <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                  <CheckCircle size={20} className="text-purple-400" />
+                <div className="w-10 h-10 bg-primary-500/20 rounded-lg flex items-center justify-center">
+                  <CheckCircle size={20} className="text-primary-400" />
                 </div>
-                <Activity size={16} className="text-purple-400 animate-pulse" />
+                <Activity size={16} className="text-primary-400 animate-pulse" />
               </div>
               <p className="text-2xl font-bold text-dark-100">
                 {analytics.activeSubscriptions}
@@ -408,7 +408,7 @@ export default function AdminAnalyticsPage() {
               </div>
               <div className="p-4 bg-dark-800/50 rounded-lg">
                 <p className="text-sm text-dark-400 mb-1">Monthly Revenue</p>
-                <p className="text-2xl font-bold text-purple-400">
+                <p className="text-2xl font-bold text-primary-400">
                   TSH {analytics.monthlyRevenue.toLocaleString()}
                 </p>
               </div>
@@ -452,7 +452,7 @@ export default function AdminAnalyticsPage() {
               </div>
               <div className="p-4 bg-dark-800/50 rounded-lg">
                 <p className="text-sm text-dark-400 mb-1">New Users This Month</p>
-                <p className="text-2xl font-bold text-purple-400">
+                <p className="text-2xl font-bold text-primary-400">
                   {analytics.newUsersThisMonth}
                 </p>
               </div>
@@ -629,7 +629,7 @@ export default function AdminAnalyticsPage() {
                   maxValue={maxSubscriptionsByPackage}
                   labelKey="package"
                   valueKey="count"
-                  color="bg-gradient-to-t from-purple-500 to-purple-400"
+                  color="bg-gradient-to-t from-primary-500 to-primary-400"
                   height={150}
                 />
               </div>
@@ -668,9 +668,9 @@ export default function AdminAnalyticsPage() {
               <div className="p-4 bg-dark-800/50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-dark-300">Pending Payments</span>
-                  <Clock size={16} className="text-orange-400" />
+                  <Clock size={16} className="text-primary-400" />
                 </div>
-                <p className="text-2xl font-bold text-orange-400">{analytics.pendingPayments}</p>
+                <p className="text-2xl font-bold text-primary-400">{analytics.pendingPayments}</p>
               </div>
               <div className="p-4 bg-dark-800/50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">

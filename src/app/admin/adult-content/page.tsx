@@ -364,7 +364,7 @@ export default function AdminAdultContentPage() {
               </button>
               <button
                 onClick={() => handleOpenForm(undefined, 'movie', 'ngono', 'movie')}
-                className="flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
               >
                 <Play size={20} />
                 <span>Add Adult Movie</span>
@@ -383,22 +383,22 @@ export default function AdminAdultContentPage() {
                 <TrendingUp size={24} className="text-red-400" />
               </div>
             </div>
-            <div className="bg-dark-800 rounded-lg p-4 border border-pink-500/20">
+            <div className="bg-dark-800 rounded-lg p-4 border border-primary-500/20">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-dark-400 text-sm">Ngono Clips</p>
-                  <p className="text-2xl font-bold text-pink-400">{ngonoCount}</p>
+                  <p className="text-2xl font-bold text-primary-400">{ngonoCount}</p>
                 </div>
-                <Video size={24} className="text-pink-400" />
+                <Video size={24} className="text-primary-400" />
               </div>
             </div>
-            <div className="bg-dark-800 rounded-lg p-4 border border-purple-500/20">
+            <div className="bg-dark-800 rounded-lg p-4 border border-primary-500/20">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-dark-400 text-sm">Adult Movies</p>
-                  <p className="text-2xl font-bold text-purple-400">{moviesNgonoCount}</p>
+                  <p className="text-2xl font-bold text-primary-400">{moviesNgonoCount}</p>
                 </div>
-                <Play size={24} className="text-purple-400" />
+                <Play size={24} className="text-primary-400" />
               </div>
             </div>
             <div className="bg-dark-800 rounded-lg p-4 border border-dark-700">
@@ -440,7 +440,7 @@ export default function AdminAdultContentPage() {
                 onClick={() => setFilterCategory('ngono')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2 ${
                   filterCategory === 'ngono'
-                    ? 'bg-pink-500 text-white'
+                    ? 'bg-primary-500 text-white'
                     : 'bg-dark-800 text-dark-300 hover:bg-dark-700'
                 }`}
               >
@@ -451,7 +451,7 @@ export default function AdminAdultContentPage() {
                 onClick={() => setFilterCategory('movies-ngono' as AdultContentType)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2 ${
                   filterCategory === 'movies-ngono'
-                    ? 'bg-purple-500 text-white'
+                    ? 'bg-primary-500 text-white'
                     : 'bg-dark-800 text-dark-300 hover:bg-dark-700'
                 }`}
               >
@@ -541,7 +541,7 @@ export default function AdminAdultContentPage() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-red-500/20 to-pink-500/20 flex items-center justify-center">
+                      <div className="w-full h-full bg-gradient-to-br from-red-500/20 to-primary-500/20 flex items-center justify-center">
                         {isMovie ? <Play size={24} className="text-red-400" /> : <Tv size={24} className="text-red-400" />}
                       </div>
                     )}
@@ -549,7 +549,7 @@ export default function AdminAdultContentPage() {
                       18+
                     </div>
                     {item.adultCategory === 'zilizovuja' && (
-                      <div className="absolute top-2 right-2 bg-orange-600 text-white text-xs px-2 py-1 rounded font-bold flex items-center space-x-1">
+                      <div className="absolute top-2 right-2 bg-primary-600 text-white text-xs px-2 py-1 rounded font-bold flex items-center space-x-1">
                         <TrendingUp size={10} />
                         <span>Trending</span>
                       </div>
@@ -560,7 +560,7 @@ export default function AdminAdultContentPage() {
                     <p className="text-dark-400 text-sm mb-2 line-clamp-2">{item.description || 'No description'}</p>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs text-dark-500">
-                        {item.adultCategory === 'zilizovuja' ? '🔥 Zilizovuja' : item.adultCategory === 'movies-ngono' ? '🎬 Movie' : '🎥 Ngono'}
+                        {item.adultCategory === 'zilizovuja' ? 'Zilizovuja' : item.adultCategory === 'movies-ngono' ? 'Movie' : 'Ngono'}
                       </span>
                       <div className="flex items-center space-x-1 text-xs text-dark-400">
                         <Eye size={12} />
@@ -642,7 +642,7 @@ export default function AdminAdultContentPage() {
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-dark-100">
                       {editingItem ? 'Edit' : 'Add'}{' '}
-                      {formSubType === 'movie' ? '🎬 Adult Movie' : formCategory === 'zilizovuja' ? 'Zilizovuja Video' : 'Ngono Clip'}
+                      {formSubType === 'movie' ? 'Adult Movie' : formCategory === 'zilizovuja' ? 'Zilizovuja Video' : 'Ngono Clip'}
                     </h2>
                     <button onClick={handleCloseForm} className="text-dark-400 hover:text-white">
                       <X size={24} />
@@ -668,9 +668,9 @@ export default function AdminAdultContentPage() {
                           }}
                           className="form-input"
                         >
-                          <option value="zilizovuja">🔥 Zilizovuja Tanzania</option>
-                          <option value="ngono">🎥 Video za Ngono (Clips)</option>
-                          <option value="movies-ngono">🎬 Movies za Ngono (Filamu Kamili)</option>
+                          <option value="zilizovuja">Zilizovuja Tanzania</option>
+                          <option value="ngono">Video za Ngono (Clips)</option>
+                          <option value="movies-ngono">Movies za Ngono (Filamu Kamili)</option>
                         </select>
                       </div>
                       <div>
@@ -713,7 +713,7 @@ export default function AdminAdultContentPage() {
                               placeholder={`Paste custom HTML player code here, e.g.:\n<iframe src="https://..." allowfullscreen></iframe>`}
                             />
                             <p className="text-xs text-amber-400/80 mt-1">
-                              ⚠️ If filled, this HTML code will be used as the player instead of the Video URL above. Leave empty to use the URL.
+                              If filled, this HTML code will be used as the player instead of the Video URL above. Leave empty to use the URL.
                             </p>
                           </div>
                         </div>
@@ -904,7 +904,7 @@ export default function AdminAdultContentPage() {
                             <label className="form-label">
                               Director
                               {formSubType === 'movie' && <span className="text-red-400 ml-1">*</span>}
-                              <span className="text-xs text-purple-400 ml-2">
+                              <span className="text-xs text-primary-400 ml-2">
                                 (Kuweka director + duration kunafanya ionekane kwenye Movies tab)
                               </span>
                             </label>
@@ -936,8 +936,8 @@ export default function AdminAdultContentPage() {
                               required={formSubType === 'movie'}
                             />
                             {formSubType === 'movie' && (
-                              <p className="text-xs text-purple-400 mt-1">
-                                ✅ Director + Duration &gt; 0 → Itaonekana kwenye &quot;Movies&quot; tab ya Adult Content
+                              <p className="text-xs text-primary-400 mt-1">
+                                Director + Duration &gt; 0 → Itaonekana kwenye &quot;Movies&quot; tab ya Adult Content
                               </p>
                             )}
                           </div>

@@ -250,7 +250,7 @@ function PayContent() {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+          <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
           <p className="text-zinc-400">Inaleta taarifa...</p>
         </div>
       </div>
@@ -296,7 +296,7 @@ function PayContent() {
         {/* Payment Form */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
           <h3 className="text-lg font-medium text-white mb-6 flex items-center gap-2">
-            <Smartphone className="w-5 h-5 text-amber-500" />
+            <Smartphone className="w-5 h-5 text-primary-500" />
             Lipa kwa Mitandao ya Simu
           </h3>
 
@@ -324,7 +324,7 @@ function PayContent() {
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 placeholder="Mfano: 0712345678"
-                className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all"
+                className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all"
                 disabled={isProcessing}
                 required
               />
@@ -339,9 +339,9 @@ function PayContent() {
 
             {/* Success/Processing Message */}
             {paymentStatus === 'processing' && (
-              <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex flex-col items-center gap-3">
-                <Loader2 className="w-6 h-6 text-amber-500 animate-spin" />
-                <p className="text-sm text-amber-500 text-center font-medium">
+              <div className="p-4 bg-primary-500/10 border border-primary-500/20 rounded-xl flex flex-col items-center gap-3">
+                <Loader2 className="w-6 h-6 text-primary-500 animate-spin" />
+                <p className="text-sm text-primary-500 text-center font-medium">
                   {paymentMessage}
                 </p>
               </div>
@@ -358,7 +358,7 @@ function PayContent() {
             <button
               type="submit"
               disabled={isProcessing || paymentStatus === 'success'}
-              className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-lg shadow-amber-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-4 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-bold rounded-xl shadow-lg shadow-primary-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isProcessing ? (
                 <>
@@ -383,7 +383,7 @@ export default function PayPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
       </div>
     }>
       <PayContent />

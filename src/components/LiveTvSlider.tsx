@@ -16,13 +16,13 @@ interface LiveTvSliderProps {
 const CATEGORY_GRADIENTS: Record<string, string> = {
   sport:          'from-blue-700 via-blue-600 to-blue-800',
   news:           'from-slate-700 via-slate-600 to-slate-800',
-  entertainment:  'from-indigo-700 via-blue-600 to-blue-800',
-  music:          'from-indigo-600 via-purple-600 to-blue-700',
+  entertainment:  'from-primary-700 via-blue-600 to-blue-800',
+  music:          'from-primary-600 via-primary-600 to-blue-700',
   kids:           'from-sky-600 via-cyan-500 to-blue-600',
   documentary:    'from-slate-600 via-blue-700 to-slate-800',
   movies:         'from-blue-800 via-blue-700 to-slate-700',
-  series:         'from-blue-700 via-indigo-600 to-blue-800',
-  africa:         'from-amber-700 via-orange-700 to-red-800',
+  series:         'from-blue-700 via-primary-600 to-blue-800',
+  africa:         'from-amber-700 via-primary-700 to-red-800',
   tanzania:       'from-green-800 via-blue-700 to-blue-900',
   other:          'from-blue-700 via-slate-700 to-blue-900',
 };

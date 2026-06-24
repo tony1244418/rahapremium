@@ -22,8 +22,8 @@ import { supabase } from '@/lib/supabase';
 const CATEGORY_COLORS: Record<string, string> = {
   sports:       'from-blue-600 to-blue-800',
   news:         'from-slate-600 to-slate-800',
-  entertainment:'from-blue-500 to-indigo-700',
-  music:        'from-indigo-500 to-blue-700',
+  entertainment:'from-blue-500 to-primary-700',
+  music:        'from-primary-500 to-blue-700',
   kids:         'from-sky-500 to-blue-600',
   documentary:  'from-slate-500 to-blue-700',
   movies:       'from-blue-700 to-slate-700',
@@ -590,7 +590,7 @@ function LiveTVContent() {
                   <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
                     <div className="text-center text-white max-w-xs w-full">
                       {/* Lock icon */}
-                      <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-600/30">
+                      <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-primary-700 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-600/30">
                         <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                           <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
@@ -602,7 +602,7 @@ function LiveTVContent() {
                       </p>
                       <button
                         onClick={() => router.push(`/subscriptions?type=livetv&redirect=${encodeURIComponent(`/live-tv?channel=${selectedChannel.id}`)}`)}
-                        className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-2xl text-sm font-bold text-white transition-all duration-200 shadow-lg shadow-blue-600/30 mb-3"
+                        className="w-full py-3 bg-gradient-to-r from-blue-600 to-primary-600 hover:from-blue-500 hover:to-primary-500 rounded-2xl text-sm font-bold text-white transition-all duration-200 shadow-lg shadow-blue-600/30 mb-3"
                       >
                         Jiunge Sasa
                       </button>

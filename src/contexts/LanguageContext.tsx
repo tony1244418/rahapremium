@@ -243,7 +243,7 @@ const translations = {
   premiumEntertainment: { en: 'Premium Entertainment Platform', sw: 'Jukwaa la Burudani la Hali ya Juu' },
   continue: { en: 'Continue', sw: 'Endelea' },
   phoneFormat: { en: 'Format: 0612345678 or 0712345678', sw: 'Muundo: 0612345678 au 0712345678' },
-  phoneNumberWarning: { en: '⚠️ Important: You cannot change your phone number after signing up unless you contact admin.', sw: '⚠️ Muhimu: Hutaweza kubadilisha nambari ya simu baada ya kujisajili isipokuwa ukimwita admini.' },
+  phoneNumberWarning: { en: 'Important: You cannot change your phone number after signing up unless you contact admin.', sw: 'Muhimu: Hutaweza kubadilisha nambari ya simu baada ya kujisajili isipokuwa ukimwita admini.' },
   enterFullName: { en: 'Enter your full name', sw: 'Ingiza jina lako kamili' },
   chooseUsername: { en: 'Choose a unique username', sw: 'Chagua jina la kipekee la mtumiaji' },
   usernameNote: { en: 'Username will be used for future logins. Choose carefully.', sw: 'Jina la mtumiaji litatumika kwa kuingia baadaye. Chagua kwa uangalifu.' },
