@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, QrCode, Camera, Share2, RefreshCw, Smartphone, Trash2, Loader2, CheckCircle, AlertCircle, Upload } from 'lucide-react';
+import { X, QrCode, Share2, RefreshCw, Smartphone, Trash2, Loader2, CheckCircle, AlertCircle, Upload } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ActiveSession {
@@ -31,7 +31,7 @@ function getDeviceLabel(): string {
 
 export default function QRConnectModal({ isOpen, onClose, initialTab = 'myqr' }: QRConnectModalProps) {
   const { user, refreshUserData } = useAuth();
-  const [tab, setTab] = useState<'myqr' | 'scan'>(initialTab);
+  const [tab, setTab] = useState<'myqr' | 'scan'>('myqr');
 
   // My QR tab state
   const [qrImageUrl, setQrImageUrl] = useState('');
@@ -175,7 +175,7 @@ export default function QRConnectModal({ isOpen, onClose, initialTab = 'myqr' }:
   }, [isOpen, tab, generateQR, loadSessions]);
 
   useEffect(() => {
-    setTab(initialTab);
+    setTab('myqr');
   }, [initialTab]);
 
   // Share QR
@@ -356,21 +356,7 @@ export default function QRConnectModal({ isOpen, onClose, initialTab = 'myqr' }:
                 </button>
               </div>
 
-              {/* Tabs */}
-              <div className="flex mx-6 mt-4 mb-0 p-1 rounded-2xl" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                {(['myqr', 'scan'] as const).map(t => (
-                  <button key={t} onClick={() => setTab(t)}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200"
-                    style={tab === t ? { background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', color: '#fff' } : { color: 'rgba(255,255,255,0.4)' }}>
-                    {t === 'myqr' ? (
-                      <span className="flex items-center justify-center gap-2"><Smartphone size={16} /> My QR Code</span>
-                    ) : (
-                      <span className="flex items-center justify-center gap-2"><Camera size={16} /> Scan QR Code</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-
+              {/* Single mode: My QR Code only (Scan QR Code removed) */}
               <div className="px-6 pb-6 pt-4">
                 {/* MY QR TAB */}
                 {tab === 'myqr' && (
