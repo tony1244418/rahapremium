@@ -16,6 +16,7 @@ import {
   Calendar,
   Phone,
   Crown,
+  Tv,
   X
 } from 'lucide-react';
 import { 
@@ -30,7 +31,7 @@ import {
 import { User, SubscriptionPackage, PackageCategory } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import LiveTimer from '@/components/ui/LiveTimer';
-import { getUserSubscriptionStatus, SUBSCRIPTION_PACKAGES, getPackagesConfig, getLiveTvPackagesConfig, LIVETV_SUBSCRIPTION_PACKAGES, PackagesConfigMap } from '@/lib/subscriptions';
+import { getUserSubscriptionStatus, getUserLiveTvSubscriptionStatus, SUBSCRIPTION_PACKAGES, getPackagesConfig, getLiveTvPackagesConfig, LIVETV_SUBSCRIPTION_PACKAGES, PackagesConfigMap } from '@/lib/subscriptions';
 import { Loading } from '@/components/ui/Loading';
 
 export default function AdminUsersPage() {
@@ -189,22 +190,23 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleRemoveSubscription = async (userId: string) => {
+  const handleRemoveSubscription = async (userId: string, category: PackageCategory = 'GENERAL') => {
     if (!adminUser) return;
-    
-    if (!confirm('Are you sure you want to remove this user\'s subscription? This action cannot be undone.')) {
+
+    const label = category === 'LIVETV' ? 'Live TV' : 'normal';
+    if (!confirm(`Are you sure you want to remove this user's ${label} subscription? This action cannot be undone.`)) {
       return;
     }
     
     setActionLoading(userId);
     try {
-      await removeUserSubscription(userId, adminUser.uid);
+      await removeUserSubscription(userId, adminUser.uid, category);
       
       // Refresh users list
       const updatedUsers = await getAllUsers();
       setUsers(updatedUsers);
       
-      alert('User subscription removed successfully!');
+      alert(`User ${label} subscription removed successfully!`);
     } catch (error) {
       console.error('Error removing subscription:', error);
       alert('Failed to remove subscription. Please try again.');
@@ -293,6 +295,7 @@ export default function AdminUsersPage() {
             <div className="space-y-4">
               {filteredUsers.map((user, index) => {
                 const subscriptionStatus = getUserSubscriptionStatus(user);
+                const liveTvStatus = getUserLiveTvSubscriptionStatus(user);
                 
                 return (
                   <motion.div
@@ -337,6 +340,11 @@ export default function AdminUsersPage() {
                                 {subscriptionStatus.packageType}
                               </span>
                             )}
+                            {liveTvStatus.isActive && (
+                              <span className="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-1 rounded">
+                                {liveTvStatus.packageType} LIVE TV
+                              </span>
+                            )}
                           </div>
                           
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-sm text-dark-400">
@@ -366,6 +374,19 @@ export default function AdminUsersPage() {
                                 />
                               </div>
                             )}
+                            {liveTvStatus.isActive && (
+                              <div className="space-y-2">
+                                <div className="flex items-center space-x-1 text-emerald-400">
+                                  <Crown size={14} />
+                                  <span>Live TV: {liveTvStatus.daysRemaining} days left</span>
+                                </div>
+                                <LiveTimer 
+                                  endDate={liveTvStatus.endDate!} 
+                                  variant="compact"
+                                  className="text-xs"
+                                />
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -389,15 +410,33 @@ export default function AdminUsersPage() {
                         
                         {subscriptionStatus.isActive && (
                           <button
-                            onClick={() => handleRemoveSubscription(user.uid)}
+                            onClick={() => handleRemoveSubscription(user.uid, 'GENERAL')}
                             disabled={actionLoading === user.uid}
                             className="touch-button text-dark-400 hover:text-red-400 transition-colors duration-200 disabled:opacity-50"
-                            title="Remove Subscription"
+                            title="Remove Normal Subscription"
                           >
                             {actionLoading === user.uid ? (
                               <div className="w-5 h-5 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
                             ) : (
                               <X size={20} />
+                            )}
+                          </button>
+                        )}
+
+                        {liveTvStatus.isActive && (
+                          <button
+                            onClick={() => handleRemoveSubscription(user.uid, 'LIVETV')}
+                            disabled={actionLoading === user.uid}
+                            className="touch-button text-emerald-400 hover:text-red-400 transition-colors duration-200 disabled:opacity-50 flex items-center"
+                            title="Remove Live TV Subscription"
+                          >
+                            {actionLoading === user.uid ? (
+                              <div className="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <span className="relative inline-flex items-center">
+                                <Tv size={20} />
+                                <X size={12} className="absolute -top-1 -right-1.5" />
+                              </span>
                             )}
                           </button>
                         )}

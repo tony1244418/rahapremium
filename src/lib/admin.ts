@@ -314,12 +314,13 @@ export const addDirectSubscription = async (
 
 export const removeUserSubscription = async (
   userId: string,
-  adminId: string
+  adminId: string,
+  category: PackageCategory = 'GENERAL'
 ): Promise<void> => {
-  await supabase.from('rahapremium_users').update({
-    subscription: null,
-    updated_at: new Date().toISOString()
-  }).eq('id', userId);
+  const payload = category === 'LIVETV'
+    ? { live_tv_subscription: null, updated_at: new Date().toISOString() }
+    : { subscription: null, updated_at: new Date().toISOString() };
+  await supabase.from('rahapremium_users').update(payload).eq('id', userId);
 };
 
 // Content Management
