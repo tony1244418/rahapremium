@@ -126,7 +126,7 @@ export default function GameDetailPage() {
     };
 
     loadGame();
-  }, [gameId, user]);
+  }, [gameId, user?.uid]);
 
   // Timeout for iframe loading
   useEffect(() => {
