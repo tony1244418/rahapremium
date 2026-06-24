@@ -580,7 +580,7 @@ function LiveTVContent() {
                   <div className="absolute top-3 left-3 z-20 flex items-center gap-2 px-3 py-1.5 bg-black/70 backdrop-blur-sm border border-yellow-500/40 rounded-xl">
                     <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
                     <span className="text-xs font-bold text-yellow-400">
-                      Free Trial: {trialSecondsLeft}s
+                      Jaribio Bila Malipo: {trialSecondsLeft}s
                     </span>
                   </div>
                 )}
@@ -596,19 +596,19 @@ function LiveTVContent() {
                           <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                         </svg>
                       </div>
-                      <h3 className="text-lg font-black text-white mb-1">Trial Ended</h3>
+                      <h3 className="text-lg font-black text-white mb-1">Jaribio Limeisha</h3>
                       <p className="text-sm text-gray-400 mb-5">
-                        Your 30-second free trial is over. Subscribe to keep watching {selectedChannel.name}.
+                        Jaribio lako la bila malipo la sekunde 30 limeisha. Jiunge ili uendelee kutazama {selectedChannel.name}.
                       </p>
                       <button
                         onClick={() => router.push(`/subscriptions?type=livetv&redirect=${encodeURIComponent(`/live-tv?channel=${selectedChannel.id}`)}`)}
                         className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-2xl text-sm font-bold text-white transition-all duration-200 shadow-lg shadow-blue-600/30 mb-3"
                       >
-                        Subscribe Now
+                        Jiunge Sasa
                       </button>
                       {trialResetIn && (
                         <p className="text-xs text-gray-500">
-                          Free trial resets in{' '}
+                          Jaribio bila malipo litarejeshwa baada ya{' '}
                           <span className="text-yellow-400 font-semibold">{trialResetIn}</span>
                         </p>
                       )}
@@ -1002,7 +1002,7 @@ function LiveTVContent() {
                         <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center border border-white/20">
                           <Lock size={18} className="text-white" />
                         </div>
-                        <span className="text-xs text-white/80 font-semibold">Subscribe</span>
+                        <span className="text-xs text-white/80 font-semibold">Jiunge</span>
                       </div>
                     )}
 
