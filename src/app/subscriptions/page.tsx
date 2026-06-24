@@ -431,7 +431,7 @@ function SubscriptionsContent() {
 
 
           {/* Current Subscription Status */}
-          {viewCategory === 'GENERAL' && subscriptionStatus.isActive && (
+          {subscriptionStatus.isActive && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -568,7 +568,7 @@ function SubscriptionsContent() {
           )}
 
           {/* Live TV Subscription Status */}
-          {viewCategory === 'LIVETV' && liveTvSubscriptionStatus.isActive && (
+          {liveTvSubscriptionStatus.isActive && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
