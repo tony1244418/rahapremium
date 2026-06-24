@@ -35,14 +35,15 @@ export const SUBSCRIPTION_PACKAGES: PackagesConfigMap = {
 };
 
 // Default Live TV packages configuration.
-// Starts as an exact copy of the regular (non-game) packages, but is stored
-// and edited independently from the general/movie packages.
+// Same prices/durations as the regular packages, but with distinct display
+// names (e.g. "FEDHA LIVE") so users can tell a Live TV package apart from a
+// normal package that shares the same key. Stored/edited independently.
 export const LIVETV_SUBSCRIPTION_PACKAGES: PackagesConfigMap = {
-  FEDHA: { days: 3, price: 5000, name: 'FEDHA' },
-  CHUMA: { days: 7, price: 8000, name: 'CHUMA' },
-  DHAHABU: { days: 14, price: 15000, name: 'DHAHABU' },
-  ALMASI: { days: 30, price: 25000, name: 'ALMASI' },
-  MALKIA: { days: 180, price: 120000, name: 'MALKIA' },
+  FEDHA: { days: 3, price: 5000, name: 'FEDHA LIVE' },
+  CHUMA: { days: 7, price: 8000, name: 'CHUMA LIVE' },
+  DHAHABU: { days: 14, price: 15000, name: 'DHAHABU LIVE' },
+  ALMASI: { days: 30, price: 25000, name: 'ALMASI LIVE' },
+  MALKIA: { days: 180, price: 120000, name: 'MALKIA LIVE' },
   // Game packages are not part of the Live TV set; kept for type completeness.
   KITONGA: { days: 0, price: 1000, name: 'KITONGA' },
   SWALA: { days: 0, price: 5000, name: 'SWALA' },

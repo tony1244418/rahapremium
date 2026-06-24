@@ -409,7 +409,6 @@ function SubscriptionsContent() {
   const modalConfig = (selectedCategory === 'LIVETV'
     ? (liveTvPackagesConfig || SUBSCRIPTION_PACKAGES)
     : (packagesConfig || SUBSCRIPTION_PACKAGES));
-  const selectedCategoryLabel = selectedCategory === 'LIVETV' ? 'Live TV' : '';
 
   // Which package list to show, based on where the user came from.
   // ?type=livetv  -> show only Live TV packages (e.g. from the Live TV page)
@@ -584,7 +583,7 @@ function SubscriptionsContent() {
                     Active Live TV Subscription
                   </h3>
                   <p className="text-dark-400">
-                    {liveTvSubscriptionStatus.packageType} Package
+                    {(liveTvPackagesConfig?.[liveTvSubscriptionStatus.packageType!]?.name) ?? liveTvSubscriptionStatus.packageType} Package
                   </p>
                 </div>
               </div>
@@ -726,8 +725,7 @@ function SubscriptionsContent() {
                   {paymentRequest ? 'Kamilisha Malipo' : 'Thibitisha Malipo'}
                 </h3>
                 <p className="text-dark-400">
-                  {selectedCategoryLabel && <span className="text-emerald-400 font-semibold">{selectedCategoryLabel} </span>}
-                  Kifurushi cha {selectedPackage} - TSH {modalConfig[selectedPackage!].price.toLocaleString()}
+                  Kifurushi cha {modalConfig[selectedPackage!].name} - TSH {modalConfig[selectedPackage!].price.toLocaleString()}
                 </p>
               </div>
 
@@ -763,7 +761,7 @@ function SubscriptionsContent() {
                 {/* Jumla ya Malipo */}
                 <div className="p-4 bg-dark-800/30 rounded-lg">
                   <div className="flex justify-between items-center">
-                    <span className="text-dark-300 font-medium">{selectedCategoryLabel} Kifurushi cha {selectedPackage}</span>
+                    <span className="text-dark-300 font-medium">Kifurushi cha {modalConfig[selectedPackage!].name}</span>
                     <span className="text-primary-400 font-bold text-lg">TSH {modalConfig[selectedPackage!].price.toLocaleString()}</span>
                   </div>
                 </div>
