@@ -317,10 +317,16 @@ export const removeUserSubscription = async (
   adminId: string,
   category: PackageCategory = 'GENERAL'
 ): Promise<void> => {
+  // NOTE: rahapremium_users has no updated_at column — including it makes the
+  // update fail silently. Only null out the relevant subscription column.
   const payload = category === 'LIVETV'
-    ? { live_tv_subscription: null, updated_at: new Date().toISOString() }
-    : { subscription: null, updated_at: new Date().toISOString() };
-  await supabase.from('rahapremium_users').update(payload).eq('id', userId);
+    ? { live_tv_subscription: null }
+    : { subscription: null };
+  const { error } = await supabase.from('rahapremium_users').update(payload).eq('id', userId);
+  if (error) {
+    console.error('removeUserSubscription failed:', error);
+    throw new Error(error.message || 'Failed to remove subscription');
+  }
 };
 
 // Content Management
