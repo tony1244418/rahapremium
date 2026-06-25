@@ -1,11 +1,5 @@
 {
   "framework": "nextjs",
-  "crons": [
-    {
-      "path": "/api/cron/cleanup-inactive",
-      "schedule": "0 3 1 * *"
-    }
-  ],
   "headers": [
     {
       "source": "/manifest.json",
