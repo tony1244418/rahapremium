@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
         const isLiveTv = paymentDoc.package_category === 'LIVETV';
         const settingsId = isLiveTv ? 'packages_livetv' : 'packages';
         const packagesConfigRes = await supabaseServer
-          .from('settings')
+          .from('admin_settings')
           .select('data')
           .eq('id', settingsId)
           .single();
@@ -176,7 +176,11 @@ export async function POST(request: NextRequest) {
           MALKIA:  { days: 180, price: 120000, name: 'MALKIA' },
         };
         if (!packagesConfigRes.error && packagesConfigRes.data?.data) {
-          packagesConfig = { ...packagesConfig, ...packagesConfigRes.data.data };
+          const raw = packagesConfigRes.data.data;
+          const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          if (parsed && typeof parsed === 'object') {
+            packagesConfig = { ...packagesConfig, ...parsed };
+          }
         }
 
         // Operate on the subscription belonging to this category only.

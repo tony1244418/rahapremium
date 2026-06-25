@@ -33,7 +33,16 @@ export default function PaymentHistoryPage() {
     if (user) {
       // Load user's payment history and subscriptions
       setPayments(user.paymentHistory || []);
-      setSubscriptions(user.subscriptionHistory || []);
+      // Merge normal + Live TV subscription histories, newest first
+      const allSubs = [
+        ...(user.subscriptionHistory || []),
+        ...(user.liveTvSubscriptionHistory || []),
+      ].sort((a, b) => {
+        const ad = new Date(a.createdAt || a.startDate).getTime();
+        const bd = new Date(b.createdAt || b.startDate).getTime();
+        return bd - ad;
+      });
+      setSubscriptions(allSubs);
       setLoading(false);
     }
   }, [user]);
@@ -193,7 +202,7 @@ Thank you for using RahaPremium!
                         </div>
                         <div>
                           <h3 className="text-lg font-semibold text-dark-100">
-                            {payment.packageType ? `${payment.packageType} Package` : payment.gameId ? 'Game Payment' : 'Payment'}
+                            {payment.packageType ? `${payment.packageType} ${payment.packageCategory === 'LIVETV' ? 'LIVE TV ' : ''}Package` : payment.gameId ? 'Game Payment' : 'Payment'}
                           </h3>
                           <p className="text-dark-400 text-sm">
                             {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString('en-GB') : 'N/A'}
@@ -289,7 +298,7 @@ Thank you for using RahaPremium!
                         </div>
                         <div>
                           <h3 className="text-lg font-semibold text-dark-100">
-                            {subscription.packageType} Package
+                            {subscription.packageType} {subscription.category === 'LIVETV' ? 'LIVE TV ' : ''}Package
                           </h3>
                           <p className="text-dark-400 text-sm">
                             {new Date(subscription.startDate).toLocaleDateString('en-GB')} - {new Date(subscription.endDate).toLocaleDateString('en-GB')}
