@@ -1,0 +1,75 @@
+# Hostinger / Apache / LiteSpeed config for rahapremium.com
+#
+# 1. Force the apex domain (rahapremium.com) to redirect to the canonical
+#    www host. OneSignal is registered for https://www.rahapremium.com, and
+#    serving the app on the apex breaks both push notifications and any
+#    static asset that Apache mis-types (e.g. .css served as text/plain).
+#
+# 2. Force HTTPS (defensive — Hostinger usually does this already).
+#
+# 3. Make sure CSS / JS / SVG / fonts get the correct Content-Type header
+#    when Apache happens to serve them directly from /_next/static. This
+#    fixes the "Refused to apply style ... MIME type 'text/plain'" error
+#    when X-Content-Type-Options: nosniff is enabled.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Apex -> www (only for the bare rahapremium.com, leave subdomains alone)
+    RewriteCond %{HTTP_HOST} ^rahapremium\.com$ [NC]
+    RewriteRule ^(.*)$ https://www.rahapremium.com/$1 [R=301,L]
+
+    # Force HTTPS
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+</IfModule>
+
+# Correct MIME types for Next.js static assets when served directly by Apache.
+# This is the PRIMARY fix for "Refused to apply style" and script MIME errors.
+<IfModule mod_mime.c>
+    AddType text/css                                .css
+    AddType application/javascript                  .js .mjs
+    AddType application/json                        .json
+    AddType application/manifest+json               .webmanifest
+    AddType image/svg+xml                           .svg .svgz
+    AddType image/webp                              .webp
+    AddType image/avif                              .avif
+    AddType font/woff                               .woff
+    AddType font/woff2                              .woff2
+    AddType font/ttf                                .ttf
+    AddType font/otf                                .otf
+    AddType application/wasm                        .wasm
+    AddType text/x-component                        .rsc
+</IfModule>
+
+# Force correct headers for _next/static/ assets in case mod_mime alone isn't enough
+# (Some Hostinger LiteSpeed configs need explicit Header directives)
+<IfModule mod_headers.c>
+    <FilesMatch "\.css$">
+        Header set Content-Type "text/css; charset=utf-8"
+    </FilesMatch>
+    <FilesMatch "\.(js|mjs)$">
+        Header set Content-Type "application/javascript; charset=utf-8"
+    </FilesMatch>
+    # Add CORS header for the apex domain so SW doesn't get blocked
+    <FilesMatch "\.(css|js|mjs|json|woff|woff2|png|svg|webp)$">
+        Header set Access-Control-Allow-Origin "https://www.rahapremium.com"
+    </FilesMatch>
+</IfModule>
+
+# Enable gzip compression for better performance
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json
+</IfModule>
+
+# Cache static assets aggressively (Next.js adds content-hash to filenames)
+<IfModule mod_expires.c>
+    ExpiresActive On
+    <FilesMatch "\.(css|js|mjs|woff|woff2|png|jpg|jpeg|svg|webp|avif|ico)$">
+        ExpiresDefault "access plus 1 year"
+    </FilesMatch>
+    <FilesMatch "\.(html|json)$">
+        ExpiresDefault "access plus 0 seconds"
+    </FilesMatch>
+</IfModule>
