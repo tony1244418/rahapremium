@@ -35,6 +35,7 @@ import { getUserSubscriptionStatus, getUserLiveTvSubscriptionStatus, SUBSCRIPTIO
 import { Loading } from '@/components/ui/Loading';
 
 export default function AdminUsersPage() {
+  // Admin users management - shows both normal and Live TV subscribers in active filter
   const { adminUser } = useAuth();
   const { t } = useLanguage();
   const [users, setUsers] = useState<User[]>([]);
