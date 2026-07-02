@@ -179,6 +179,36 @@ function LiveTVContent() {
   const TRIAL_COOLDOWN = 24 * 60 * 60 * 1000; // 24 hours in ms
 
   async function handleChannelClick(channel: LiveChannel, source?: 'slider' | 'grid' | 'list') {
+    // Detect iPhone/iPad and DASH stream - offer VLC option
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    const isDASH = channel.streamUrl.includes('.mpd');
+    
+    if (isIOS && isDASH) {
+      // Show VLC deep link option for iPhone users
+      const useVLC = confirm(
+        `📱 iPhone Playback\n\n` +
+        `This channel uses DASH format which Safari doesn't support.\n\n` +
+        `Would you like to open in VLC app?\n\n` +
+        `• YES - Open in VLC (free app)\n` +
+        `• NO - Continue (may not play)`
+      );
+      
+      if (useVLC) {
+        // VLC deep link - opens VLC app with the stream
+        const vlcUrl = `vlc://${channel.streamUrl.replace('https://', '').replace('http://', '')}`;
+        window.location.href = vlcUrl;
+        
+        // If VLC not installed, show App Store after 2 seconds
+        setTimeout(() => {
+          const appStoreUrl = 'https://apps.apple.com/app/vlc-for-mobile/id650377962';
+          if (confirm('VLC app not found.\n\nDownload VLC for free?')) {
+            window.open(appStoreUrl, '_blank');
+          }
+        }, 2000);
+        return;
+      }
+    }
+    
     // Free channel: if no package is required, OR the admin enabled "All Channels
     // Free", anyone can watch it freely — no login, no subscription, no trial.
     const isFreeChannel = !channel.requiredPackages || channel.requiredPackages.length === 0;
@@ -387,28 +417,14 @@ function LiveTVContent() {
         parsedClearKeys && Object.keys(parsedClearKeys).length > 0;
 
       // Attempt to play unmuted first (best user experience)
-      // If browser policy blocks it, fallback to muted autoplay (critical for iOS)
+      // If browser policy blocks it, fallback to muted autoplay
       const onReady = () => {
         setPlayerLoading(false);
-        
-        // iOS requires user interaction or muted playback
-        // Try unmuted first, fallback to muted if blocked
-        const attemptPlay = async () => {
-          try {
-            video.muted = false;
-            await video.play();
-          } catch (err) {
-            // Autoplay blocked - try muted (common on iOS)
-            try {
-              video.muted = true;
-              await video.play();
-            } catch (mutedErr) {
-              console.warn('Autoplay failed even when muted:', mutedErr);
-            }
-          }
-        };
-        
-        attemptPlay();
+        video.muted = false;
+        video.play().catch(() => {
+          video.muted = true;
+          video.play().catch(() => {});
+        });
 
         // Start 30s trial countdown if in trial mode
         if (isTrial) {
@@ -537,25 +553,8 @@ function LiveTVContent() {
             if (data.fatal && !cancelled) onErr('HLS error — stream unreachable or unsupported format.');
           });
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-          // Native HLS support (iOS Safari)
-          latestCdnTokenRef.current = cdnToken;
           video.src = url;
-          
-          // iOS Safari-specific setup
-          video.setAttribute('webkit-playsinline', 'true');
-          video.setAttribute('playsinline', 'true');
-          video.load(); // Important for iOS
-          
-          video.addEventListener('loadedmetadata', () => {
-            if (!cancelled) onReady();
-          }, { once: true });
-          
-          video.addEventListener('error', (e: any) => {
-            if (!cancelled) {
-              console.error('Native HLS error:', e);
-              onErr('Hitilafu ya video. Tafadhali jaribu tena.');
-            }
-          }, { once: true });
+          video.addEventListener('loadedmetadata', onReady, { once: true });
         } else {
           onErr('HLS is not supported in this browser.');
         }
@@ -600,13 +599,10 @@ function LiveTVContent() {
                   ref={inlineVideoRef}
                   className="w-full h-full object-contain"
                   playsInline
-                  webkit-playsinline="true"
                   autoPlay
                   muted
                   controls
-                  controlsList="nodownload"
                   poster={selectedChannel.thumbnailUrl}
-                  crossOrigin="anonymous"
                 />
 
                 {/* Trial countdown badge */}
