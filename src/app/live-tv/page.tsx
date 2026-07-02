@@ -179,18 +179,6 @@ function LiveTVContent() {
   const TRIAL_COOLDOWN = 24 * 60 * 60 * 1000; // 24 hours in ms
 
   async function handleChannelClick(channel: LiveChannel, source?: 'slider' | 'grid' | 'list') {
-    // Detect iPhone/iPad and DASH stream - auto redirect to WAVE browser
-    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-    const isDASH = channel.streamUrl.includes('.mpd');
-    const isWaveBrowser = /Wave/.test(navigator.userAgent);
-    
-    // If Safari on iOS with DASH stream, automatically redirect to WAVE
-    if (isIOS && isDASH && !isWaveBrowser) {
-      const waveUrl = `wave://browseto=${encodeURIComponent(window.location.href)}`;
-      window.location.href = waveUrl;
-      return;
-    }
-    
     // Free channel: if no package is required, OR the admin enabled "All Channels
     // Free", anyone can watch it freely — no login, no subscription, no trial.
     const isFreeChannel = !channel.requiredPackages || channel.requiredPackages.length === 0;
