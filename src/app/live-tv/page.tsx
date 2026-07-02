@@ -413,6 +413,40 @@ function LiveTVContent() {
         }
       };
 
+      // ─── iPhone/Safari DASH → HLS via transcoder ──────────────────────────
+      // Safari on iOS cannot play DASH. If a transcoder server is configured
+      // and the user is on iOS Safari (not WAVE) with a DASH stream and no
+      // ClearKey DRM, route the fully-tokenized URL through the transcoder,
+      // which returns an HLS stream iPhone can play natively.
+      const transcoderUrl = process.env.NEXT_PUBLIC_TRANSCODER_URL;
+      const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isWaveBrowser = /Wave/.test(navigator.userAgent);
+
+      if (transcoderUrl && isIOS && !isWaveBrowser && isDash && !hasClearKey) {
+        // Point the player at the transcoder's HLS output.
+        const hlsUrl = `${transcoderUrl.replace(/\/$/, '')}/play?url=${encodeURIComponent(url)}`;
+        if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          // Native HLS (best on iPhone)
+          video.src = hlsUrl;
+          video.addEventListener('loadedmetadata', onReady, { once: true });
+          video.addEventListener('error', () => { if (!cancelled) onErr('Failed to load stream.'); }, { once: true });
+        } else if (Hls.isSupported()) {
+          const hls = new Hls({ lowLatencyMode: true, maxBufferLength: 30 });
+          inlineHlsRef.current = hls;
+          hls.loadSource(hlsUrl);
+          hls.attachMedia(video);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => { if (!cancelled) onReady(); });
+          hls.on(Hls.Events.ERROR, (_: any, data: any) => {
+            if (data.fatal && !cancelled) onErr('HLS error — stream unreachable.');
+          });
+        } else {
+          video.src = hlsUrl;
+          video.addEventListener('loadedmetadata', onReady, { once: true });
+        }
+        return; // handled by transcoder path
+      }
+
       if (isDash || hasClearKey) {
         // --- Shaka Player for DASH / ClearKey ---
         try {
