@@ -179,34 +179,45 @@ function LiveTVContent() {
   const TRIAL_COOLDOWN = 24 * 60 * 60 * 1000; // 24 hours in ms
 
   async function handleChannelClick(channel: LiveChannel, source?: 'slider' | 'grid' | 'list') {
-    // Detect iPhone/iPad and DASH stream - offer VLC option
+    // Detect iPhone/iPad and DASH stream - offer VLC or WAVE options
     const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
     const isDASH = channel.streamUrl.includes('.mpd');
     
     if (isIOS && isDASH) {
-      // Show VLC deep link option for iPhone users
-      const useVLC = confirm(
-        `📱 iPhone Playback\n\n` +
-        `This channel uses DASH format which Safari doesn't support.\n\n` +
-        `Would you like to open in VLC app?\n\n` +
-        `• YES - Open in VLC (free app)\n` +
-        `• NO - Continue (may not play)`
+      // Show options for iPhone users
+      const choice = confirm(
+        `📱 iPhone DASH Playback\n\n` +
+        `This channel requires DASH support.\n\n` +
+        `Choose your preferred app:\n\n` +
+        `• OK - Open in VLC Player\n` +
+        `• Cancel - Open in WAVE Browser\n\n` +
+        `(Both apps are free and support DASH)`
       );
       
-      if (useVLC) {
-        // VLC deep link - opens VLC app with the stream
+      if (choice) {
+        // VLC deep link
         const vlcUrl = `vlc://${channel.streamUrl.replace('https://', '').replace('http://', '')}`;
         window.location.href = vlcUrl;
         
         // If VLC not installed, show App Store after 2 seconds
         setTimeout(() => {
-          const appStoreUrl = 'https://apps.apple.com/app/vlc-for-mobile/id650377962';
-          if (confirm('VLC app not found.\n\nDownload VLC for free?')) {
-            window.open(appStoreUrl, '_blank');
+          if (confirm('VLC not installed.\n\nDownload VLC for free?')) {
+            window.open('https://apps.apple.com/app/vlc-for-mobile/id650377962', '_blank');
           }
         }, 2000);
-        return;
+      } else {
+        // WAVE browser deep link
+        const waveUrl = `wave://browseto=${encodeURIComponent(window.location.href)}`;
+        window.location.href = waveUrl;
+        
+        // If WAVE not installed, show App Store after 2 seconds
+        setTimeout(() => {
+          if (confirm('WAVE Browser not installed.\n\nDownload WAVE for free?\n\nWAVE plays DASH streams directly in browser.')) {
+            window.open('https://apps.apple.com/app/wave-web-browser/id1450645484', '_blank');
+          }
+        }, 2000);
       }
+      return;
     }
     
     // Free channel: if no package is required, OR the admin enabled "All Channels
