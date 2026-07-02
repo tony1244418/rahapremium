@@ -387,14 +387,28 @@ function LiveTVContent() {
         parsedClearKeys && Object.keys(parsedClearKeys).length > 0;
 
       // Attempt to play unmuted first (best user experience)
-      // If browser policy blocks it, fallback to muted autoplay
+      // If browser policy blocks it, fallback to muted autoplay (critical for iOS)
       const onReady = () => {
         setPlayerLoading(false);
-        video.muted = false;
-        video.play().catch(() => {
-          video.muted = true;
-          video.play().catch(() => {});
-        });
+        
+        // iOS requires user interaction or muted playback
+        // Try unmuted first, fallback to muted if blocked
+        const attemptPlay = async () => {
+          try {
+            video.muted = false;
+            await video.play();
+          } catch (err) {
+            // Autoplay blocked - try muted (common on iOS)
+            try {
+              video.muted = true;
+              await video.play();
+            } catch (mutedErr) {
+              console.warn('Autoplay failed even when muted:', mutedErr);
+            }
+          }
+        };
+        
+        attemptPlay();
 
         // Start 30s trial countdown if in trial mode
         if (isTrial) {
@@ -523,8 +537,25 @@ function LiveTVContent() {
             if (data.fatal && !cancelled) onErr('HLS error — stream unreachable or unsupported format.');
           });
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          // Native HLS support (iOS Safari)
+          latestCdnTokenRef.current = cdnToken;
           video.src = url;
-          video.addEventListener('loadedmetadata', onReady, { once: true });
+          
+          // iOS Safari-specific setup
+          video.setAttribute('webkit-playsinline', 'true');
+          video.setAttribute('playsinline', 'true');
+          video.load(); // Important for iOS
+          
+          video.addEventListener('loadedmetadata', () => {
+            if (!cancelled) onReady();
+          }, { once: true });
+          
+          video.addEventListener('error', (e: any) => {
+            if (!cancelled) {
+              console.error('Native HLS error:', e);
+              onErr('Hitilafu ya video. Tafadhali jaribu tena.');
+            }
+          }, { once: true });
         } else {
           onErr('HLS is not supported in this browser.');
         }
@@ -569,10 +600,13 @@ function LiveTVContent() {
                   ref={inlineVideoRef}
                   className="w-full h-full object-contain"
                   playsInline
+                  webkit-playsinline="true"
                   autoPlay
                   muted
                   controls
+                  controlsList="nodownload"
                   poster={selectedChannel.thumbnailUrl}
+                  crossOrigin="anonymous"
                 />
 
                 {/* Trial countdown badge */}
