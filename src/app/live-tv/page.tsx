@@ -413,6 +413,40 @@ function LiveTVContent() {
         }
       };
 
+      // ─── iOS transcoder route ───────────────────────────────────────────
+      // iPhone/iPad Safari can't play DASH through MSE (Shaka fails). When a
+      // transcoder is configured, convert the tokenized DASH URL to HLS
+      // server-side and let Safari play it natively. ClearKey/DRM streams
+      // cannot be stream-copied, so they are left on the normal Shaka path.
+      const TRANSCODER_URL = process.env.NEXT_PUBLIC_TRANSCODER_URL;
+      const isAppleMobile =
+        typeof navigator !== 'undefined' &&
+        (/iP(hone|od|ad)/.test(navigator.userAgent) ||
+          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+
+      if (isDash && !hasClearKey && isAppleMobile && TRANSCODER_URL) {
+        const hlsUrl = `${TRANSCODER_URL.replace(/\/+$/, '')}/play?url=${encodeURIComponent(url)}`;
+
+        if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          // Native HLS (Safari) — most reliable path on iPhone
+          video.src = hlsUrl;
+          video.addEventListener('loadedmetadata', onReady, { once: true });
+        } else if (Hls.isSupported()) {
+          const hls = new Hls({ maxBufferLength: 30 });
+          inlineHlsRef.current = hls;
+          hls.loadSource(hlsUrl);
+          hls.attachMedia(video);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => { if (!cancelled) onReady(); });
+          hls.on(Hls.Events.ERROR, (_: any, data: any) => {
+            if (data.fatal && !cancelled) onErr('Transcoder HLS error — stream unreachable.');
+          });
+        } else {
+          video.src = hlsUrl;
+          video.addEventListener('loadedmetadata', onReady, { once: true });
+        }
+        return; // handled by transcoder — skip the DASH/Shaka path below
+      }
+
       if (isDash || hasClearKey) {
         // --- Shaka Player for DASH / ClearKey ---
         try {
