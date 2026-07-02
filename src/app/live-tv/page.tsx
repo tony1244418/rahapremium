@@ -182,9 +182,11 @@ function LiveTVContent() {
     // Detect iPhone/iPad and DASH stream - redirect to WAVE browser
     const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
     const isDASH = channel.streamUrl.includes('.mpd');
+    const isWaveBrowser = /Wave/.test(navigator.userAgent);
     
-    if (isIOS && isDASH) {
-      // Show WAVE browser option for iPhone users
+    // If already in WAVE browser, just play normally (WAVE supports DASH)
+    if (isIOS && isDASH && !isWaveBrowser) {
+      // Show WAVE browser option for iPhone users in Safari
       const useWave = confirm(
         `📱 iPhone DASH Playback\n\n` +
         `This channel requires DASH support which Safari doesn't have.\n\n` +
