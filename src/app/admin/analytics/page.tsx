@@ -752,6 +752,52 @@ export default function AdminAnalyticsPage() {
             </div>
           </div>
 
+          {/* Top 10 Most-Purchased Content */}
+          <div className="glass-effect rounded-lg p-6">
+            <h2 className="text-xl font-bold text-dark-100 mb-2 flex items-center space-x-2">
+              <TrendingUp size={24} className="text-amber-400" />
+              <span>Top 10 Most-Purchased Content</span>
+            </h2>
+            <p className="text-sm text-dark-400 mb-6">
+              Content ranked by number of completed pay-per-view purchases
+            </p>
+
+            {(!analytics.topPaidContent || analytics.topPaidContent.length === 0) ? (
+              <div className="text-center py-8 text-dark-500">
+                <Film size={32} className="mx-auto mb-3 opacity-40" />
+                <p className="text-sm">No pay-per-view purchases recorded yet</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {analytics.topPaidContent.map((item, index) => (
+                  <div key={item.contentId} className="flex items-center gap-4 p-3 bg-dark-800/40 rounded-lg border border-dark-700/40">
+                    {/* Rank */}
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black flex-shrink-0 ${
+                      index === 0 ? 'bg-amber-500/30 text-amber-300 border border-amber-500/40' :
+                      index === 1 ? 'bg-slate-400/20 text-slate-300 border border-slate-500/30' :
+                      index === 2 ? 'bg-orange-700/30 text-orange-400 border border-orange-700/40' :
+                      'bg-dark-700/60 text-dark-400 border border-dark-600/40'
+                    }`}>
+                      #{index + 1}
+                    </div>
+
+                    {/* Title + type */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-dark-100 text-sm truncate">{item.title}</p>
+                      <p className="text-xs text-dark-500 capitalize">{item.contentType}</p>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-sm font-bold text-amber-300">{item.count} purchases</p>
+                      <p className="text-xs text-dark-500">TSH {item.revenue.toLocaleString()}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Content Statistics */}
           <div className="glass-effect rounded-lg p-6">
             <h2 className="text-xl font-bold text-dark-100 mb-6 flex items-center space-x-2">

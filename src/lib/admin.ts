@@ -554,6 +554,14 @@ export interface DetailedAnalytics {
     content: { revenue: number; count: number };
     game: { revenue: number; count: number };
   };
+  // Top content by number of completed purchases (pay-per-view leaderboard)
+  topPaidContent: {
+    contentId: string;
+    title: string;
+    contentType: string;
+    count: number;
+    revenue: number;
+  }[];
   totalPayments: number;
   completedPayments: number;
   failedPayments: number;
@@ -581,7 +589,7 @@ export const getDetailedAnalytics = async (): Promise<DetailedAnalytics> => {
   // Fetch data
   const [{ data: users }, { data: payments }] = await Promise.all([
     supabase.from('rahapremium_users').select('created_at, subscription, live_tv_subscription'),
-    supabase.from('payments').select('amount, status, created_at, completed_at, package_type, payment_type, package_category, order_id')
+    supabase.from('payments').select('amount, status, created_at, completed_at, package_type, payment_type, package_category, content_id, content_type, order_id')
   ]);
 
   const allUsers = users || [];
@@ -609,6 +617,9 @@ export const getDetailedAnalytics = async (): Promise<DetailedAnalytics> => {
     content: { revenue: 0, count: 0 },
     game: { revenue: 0, count: 0 },
   };
+
+  // Accumulate completed content purchases per content_id (pay-per-view).
+  const contentPurchases = new Map<string, { contentId: string; contentType: string; count: number; revenue: number }>();
 
   const dailyStatsMap = new Map<string, { revenue: number; users: number; completed: number; failed: number }>();
   
@@ -702,6 +713,21 @@ export const getDetailedAnalytics = async (): Promise<DetailedAnalytics> => {
           if (ptype === 'content') {
             revenueByType.content.revenue += amt;
             revenueByType.content.count += 1;
+            // Track per-content purchases for the leaderboard
+            if (payment.content_id) {
+              const existing = contentPurchases.get(payment.content_id);
+              if (existing) {
+                existing.count += 1;
+                existing.revenue += amt;
+              } else {
+                contentPurchases.set(payment.content_id, {
+                  contentId: payment.content_id,
+                  contentType: payment.content_type || 'content',
+                  count: 1,
+                  revenue: amt,
+                });
+              }
+            }
           } else if (ptype === 'game') {
             revenueByType.game.revenue += amt;
             revenueByType.game.count += 1;
@@ -718,6 +744,33 @@ export const getDetailedAnalytics = async (): Promise<DetailedAnalytics> => {
   });
 
   const successRate = totalPayments > 0 ? (completedPayments / totalPayments) * 100 : 0;
+
+  // ── Build top-10 paid content leaderboard ─────────────────────────────────
+  // Resolve content titles from DB — query all content tables in parallel.
+  let topPaidContent: DetailedAnalytics['topPaidContent'] = [];
+  if (contentPurchases.size > 0) {
+    const contentIds = Array.from(contentPurchases.keys());
+    const [movies, series, stories, episodes] = await Promise.all([
+      supabase.from('movies').select('id, title').in('id', contentIds),
+      supabase.from('series').select('id, title').in('id', contentIds),
+      supabase.from('stories').select('id, title').in('id', contentIds),
+      supabase.from('episodes').select('id, title').in('id', contentIds),
+    ]);
+    const titleMap = new Map<string, string>();
+    [movies.data, series.data, stories.data, episodes.data].forEach(rows => {
+      (rows || []).forEach((r: { id: string; title: string }) => {
+        if (r.id && r.title) titleMap.set(r.id, r.title);
+      });
+    });
+
+    topPaidContent = Array.from(contentPurchases.values())
+      .map(c => ({
+        ...c,
+        title: titleMap.get(c.contentId) || `Unknown (${c.contentId.slice(0, 8)}…)`,
+      }))
+      .sort((a, b) => b.count - a.count || b.revenue - a.revenue)
+      .slice(0, 10);
+  }
 
   const dailyRevenueLast7Days: { date: string; revenue: number }[] = [];
   const dailyUsersLast7Days: { date: string; users: number }[] = [];
@@ -740,6 +793,7 @@ export const getDetailedAnalytics = async (): Promise<DetailedAnalytics> => {
     normalSubscriptions,
     liveTvSubscriptions,
     revenueByType,
+    topPaidContent,
     totalPayments,
     completedPayments,
     failedPayments,
