@@ -107,17 +107,25 @@ export default function AdminUsersPage() {
     if (statusFilter !== 'all') {
       const now = new Date();
       filtered = filtered.filter(user => {
+        const hasActiveNormal = !user.isBlocked &&
+          user.subscription &&
+          user.subscription.isActive &&
+          new Date(user.subscription.endDate) > now;
+
+        const hasActiveLiveTv = !user.isBlocked &&
+          user.liveTvSubscription &&
+          user.liveTvSubscription.isActive &&
+          new Date(user.liveTvSubscription.endDate) > now;
+
         switch (statusFilter) {
           case 'active':
-            return !user.isBlocked && user.subscription && 
-                   user.subscription.isActive && 
-                   new Date(user.subscription.endDate) > now;
+            // show users with EITHER an active normal OR active Live TV subscription
+            return hasActiveNormal || hasActiveLiveTv;
           case 'blocked':
             return user.isBlocked;
           case 'expired':
-            return !user.subscription || 
-                   !user.subscription.isActive || 
-                   new Date(user.subscription.endDate) <= now;
+            // show users with NO active subscription of any kind (and not blocked)
+            return !user.isBlocked && !hasActiveNormal && !hasActiveLiveTv;
           default:
             return true;
         }
