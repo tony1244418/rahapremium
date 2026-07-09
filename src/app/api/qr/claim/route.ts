@@ -2,10 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import type { SubscriptionPackage } from '@/types';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+// Force this route to be treated as dynamic — never evaluated at build time.
+export const dynamic = 'force-dynamic';
+
+// Lazily create the admin client INSIDE the handler. Creating it at module
+// load makes `next build` crash ("Invalid supabaseUrl") on hosts where the
+// env vars aren't present during the build step (e.g. Hostinger).
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key'
+  );
+}
 
 // Plan-based device limits
 const DEVICE_LIMITS: Record<string, number> = {
@@ -38,6 +46,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const supabaseAdmin = getSupabaseAdmin();
 
     // Find user with this token
     const { data: userData, error: userError } = await supabaseAdmin
