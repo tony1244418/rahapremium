@@ -43,6 +43,7 @@ interface Payment {
   completed_by: string | null;
   is_manually_completed: boolean;
   content_id?: string;
+  content_type?: string;
   game_id?: string;
 }
 
@@ -89,6 +90,8 @@ export default function AdminPaymentsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [gatewayStatus, setGatewayStatus] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  // Maps a content_id → its human title (for content/PPV payments)
+  const [contentTitles, setContentTitles] = useState<Record<string, string>>({});
 
   // ── Revenue calculations ───────────────────────────────────────────────
   // NOTE: manually-completed payments are excluded from gateway totals
@@ -190,6 +193,30 @@ export default function AdminPaymentsPage() {
         const map: Record<string, PaymentUser> = {};
         (usersData || []).forEach((u: PaymentUser) => { map[u.id] = u; });
         setUsers(map);
+      }
+
+      // Resolve content titles for content/PPV payments so admin sees WHICH
+      // content each user paid for (not just the word "content").
+      const contentIds = [...new Set(
+        (data || [])
+          .filter((p: Payment) => p.content_id)
+          .map((p: Payment) => p.content_id as string)
+      )];
+      if (contentIds.length > 0) {
+        const titleMap: Record<string, string> = {};
+        // Query all content tables — IDs are UUIDs so there's no collision.
+        const [movies, series, stories, episodes] = await Promise.all([
+          supabase.from('movies').select('id, title').in('id', contentIds),
+          supabase.from('series').select('id, title').in('id', contentIds),
+          supabase.from('stories').select('id, title').in('id', contentIds),
+          supabase.from('episodes').select('id, title').in('id', contentIds),
+        ]);
+        [movies.data, series.data, stories.data, episodes.data].forEach(rows => {
+          (rows || []).forEach((r: { id: string; title: string }) => {
+            if (r.title) titleMap[r.id] = r.title;
+          });
+        });
+        setContentTitles(titleMap);
       }
     } catch (err) {
       console.error('Error loading payments:', err);
@@ -742,7 +769,11 @@ export default function AdminPaymentsPage() {
                           <div className="flex items-center gap-3 mt-1 flex-wrap text-xs text-dark-400">
                             <span className="flex items-center gap-1">
                               <Package size={11} />
-                              {payment.package_type || payment.payment_type || '—'}
+                              {payment.payment_type === 'content'
+                                ? (payment.content_id && contentTitles[payment.content_id]
+                                    ? `${contentTitles[payment.content_id]}${payment.content_type ? ` (${payment.content_type})` : ''}`
+                                    : `Content${payment.content_type ? ` (${payment.content_type})` : ''}`)
+                                : (payment.package_type || payment.payment_type || '—')}
                             </span>
                             <span className="flex items-center gap-1">
                               <CreditCard size={11} />
