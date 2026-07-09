@@ -142,6 +142,25 @@ export default function AdminPaymentsPage() {
     }));
   }, [payments]);
 
+  // This week — last 7 days (including today)
+  const weekRevenue = React.useMemo((): GatewayRevenue => {
+    const start = new Date(); start.setDate(start.getDate() - 6); start.setHours(0, 0, 0, 0);
+    return revenueFor(payments.filter(p => {
+      const d = paymentDate(p);
+      return d !== null && d >= start;
+    }));
+  }, [payments]);
+
+  // This month — from the 1st of the current month
+  const monthRevenue = React.useMemo((): GatewayRevenue => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    return revenueFor(payments.filter(p => {
+      const d = paymentDate(p);
+      return d !== null && d >= start;
+    }));
+  }, [payments]);
+
   const allTimeRevenue = React.useMemo((): GatewayRevenue => revenueFor(payments), [payments]);
 
   const showToast = (type: 'success' | 'error', msg: string) => {
@@ -449,6 +468,91 @@ export default function AdminPaymentsPage() {
                       <span className="text-dark-400">Manual</span>
                     </span>
                     <span className="text-primary-400 font-medium">({yesterdayRevenue.manualCount} transactions)</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Weekly & Monthly income ─────────────────────────────────── */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* This Week */}
+            <div className="glass-effect rounded-xl p-4 border border-dark-700/50">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-7 h-7 rounded-lg bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center">
+                  <TrendingUp size={14} className="text-indigo-400" />
+                </div>
+                <span className="text-sm font-bold text-dark-100">Wiki Hii (7 days)</span>
+                <span className="ml-auto text-xs text-dark-500">{weekRevenue.count} malipo</span>
+              </div>
+              <div className="text-xl font-black text-indigo-400 mb-3">
+                TSH {weekRevenue.total.toLocaleString()}
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-blue-400 inline-block"></span>
+                    <span className="text-dark-400">ClickPesa</span>
+                    <span className="text-dark-600">({weekRevenue.cpCount})</span>
+                  </span>
+                  <span className="font-semibold text-blue-300">TSH {weekRevenue.clickpesa.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-primary-400 inline-block"></span>
+                    <span className="text-dark-400">HarakaPay</span>
+                    <span className="text-dark-600">({weekRevenue.hpCount})</span>
+                  </span>
+                  <span className="font-semibold text-primary-300">TSH {weekRevenue.harakapay.toLocaleString()}</span>
+                </div>
+                {weekRevenue.manualCount > 0 && (
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-dark-700/40">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-primary-400 inline-block"></span>
+                      <span className="text-dark-400">Manual</span>
+                    </span>
+                    <span className="text-primary-400 font-medium">({weekRevenue.manualCount} transactions)</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* This Month */}
+            <div className="glass-effect rounded-xl p-4 border border-dark-700/50">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-7 h-7 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/30 flex items-center justify-center">
+                  <DollarSign size={14} className="text-fuchsia-400" />
+                </div>
+                <span className="text-sm font-bold text-dark-100">Mwezi Huu</span>
+                <span className="ml-auto text-xs text-dark-500">{monthRevenue.count} malipo</span>
+              </div>
+              <div className="text-xl font-black text-fuchsia-400 mb-3">
+                TSH {monthRevenue.total.toLocaleString()}
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-blue-400 inline-block"></span>
+                    <span className="text-dark-400">ClickPesa</span>
+                    <span className="text-dark-600">({monthRevenue.cpCount})</span>
+                  </span>
+                  <span className="font-semibold text-blue-300">TSH {monthRevenue.clickpesa.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-primary-400 inline-block"></span>
+                    <span className="text-dark-400">HarakaPay</span>
+                    <span className="text-dark-600">({monthRevenue.hpCount})</span>
+                  </span>
+                  <span className="font-semibold text-primary-300">TSH {monthRevenue.harakapay.toLocaleString()}</span>
+                </div>
+                {monthRevenue.manualCount > 0 && (
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-dark-700/40">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-primary-400 inline-block"></span>
+                      <span className="text-dark-400">Manual</span>
+                    </span>
+                    <span className="text-primary-400 font-medium">({monthRevenue.manualCount} transactions)</span>
                   </div>
                 )}
               </div>
