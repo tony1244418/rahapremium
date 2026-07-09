@@ -451,14 +451,19 @@ export const getAnalytics = async (): Promise<AdminAnalytics> => {
       { count: seriesCount },
       { count: storiesCount }
     ] = await Promise.all([
-      supabase.from('rahapremium_users').select('is_blocked, subscription'),
+      supabase.from('rahapremium_users').select('is_blocked, subscription, live_tv_subscription'),
       supabase.from('payments').select('amount, status, completed_at, order_id').eq('status', 'completed'),
       supabase.from('movies').select('*', { count: 'exact', head: true }),
       supabase.from('series').select('*', { count: 'exact', head: true }),
       supabase.from('stories').select('*', { count: 'exact', head: true })
     ]);
 
-    const activeSubscriptions = (users || []).filter(user => user.subscription?.isActive && new Date(user.subscription.endDate) > now).length;
+    // Count users with EITHER an active normal OR an active Live TV subscription.
+    const activeSubscriptions = (users || []).filter(user => {
+      const normalActive = user.subscription?.isActive && new Date(user.subscription.endDate) > now;
+      const liveTvActive = user.live_tv_subscription?.isActive && new Date(user.live_tv_subscription.endDate) > now;
+      return normalActive || liveTvActive;
+    }).length;
     const blockedUsers = (users || []).filter(user => user.is_blocked).length;
 
     const totalRevenue = (payments || [])
