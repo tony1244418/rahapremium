@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Use the service-role client so we can query the admins table without RLS interference
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-// A lightweight client used only for auth verification
-const adminSupabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+// Lazily create the service-role client INSIDE the function. Creating it at
+// module load makes `next build` crash ("Invalid supabaseUrl") on hosts where
+// the env vars aren't present during the build step (e.g. Hostinger), because
+// every route that imports this file evaluates createClient at import time.
+function getAdminSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+    process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder'
+  );
+}
 
 /**
  * Extracts the Bearer token from an Authorization header.
@@ -38,6 +42,8 @@ export async function verifyAdminRequest(request: NextRequest): Promise<NextResp
       { status: 401 }
     );
   }
+
+  const adminSupabase = getAdminSupabase();
 
   // Validate the token with Supabase Auth
   const { data: { user }, error: authError } = await adminSupabase.auth.getUser(token);
