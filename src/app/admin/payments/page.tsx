@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   CreditCard, RefreshCw, CheckCircle, XCircle, Clock, Search,
   AlertTriangle, Zap, Phone, User, Package, Calendar, ExternalLink,
-  ChevronDown, ChevronUp, Filter, TrendingUp, DollarSign,
+  ChevronDown, ChevronUp, Filter, TrendingUp, DollarSign, Trash2,
 } from 'lucide-react';
 
 // ── Gateway detection helper ──────────────────────────────────────────────
@@ -331,6 +331,30 @@ export default function AdminPaymentsPage() {
     }
   };
 
+  // Bulk delete all payments of a given status (pending or failed)
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const deleteAllByStatus = async (status: 'pending' | 'failed') => {
+    const count = payments.filter(p => p.status === status).length;
+    if (count === 0) {
+      showToast('error', `Hakuna malipo ya ${status}`);
+      return;
+    }
+    if (!confirm(`Una uhakika unataka kufuta ALL ${count} ${status} payments?\n\nHatua hii haiwezi kurudishwa (permanent delete).`)) return;
+
+    setBulkDeleting(true);
+    try {
+      const { error } = await supabase.from('payments').delete().eq('status', status);
+      if (error) throw error;
+      showToast('success', `Umefuta ${count} ${status} payments`);
+      await loadPayments();
+    } catch (err: any) {
+      console.error('Bulk delete error:', err);
+      showToast('error', `Imeshindwa: ${err.message}`);
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
   const filtered = payments.filter(p => {
     if (filter !== 'all' && p.status !== filter) return false;
     if (search) {
@@ -649,6 +673,18 @@ export default function AdminPaymentsPage() {
               className="w-full pl-10 pr-4 py-3 bg-dark-800 border border-dark-600 rounded-xl text-dark-100 placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 text-sm"
             />
           </div>
+
+          {/* Bulk delete — only shown when viewing pending or failed */}
+          {(filter === 'pending' || filter === 'failed') && counts[filter] > 0 && (
+            <button
+              onClick={() => deleteAllByStatus(filter)}
+              disabled={bulkDeleting}
+              className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-red-600/90 hover:bg-red-500 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50 shadow-lg shadow-red-600/20"
+            >
+              {bulkDeleting ? <RefreshCw size={15} className="animate-spin" /> : <Trash2 size={15} />}
+              Futa {filter === 'pending' ? 'Pending' : 'Failed'} Zote ({counts[filter]})
+            </button>
+          )}
 
           {/* Payments List */}
           {loading ? (
