@@ -277,6 +277,13 @@ export default function AdminAnalyticsPage() {
 
   const maxSubscriptionsByPackage = Math.max(...subscriptionsByPackageData.map(d => d.count), 1);
 
+  // Live TV subscriptions by package data
+  const liveTvByPackageData = Object.entries(analytics.liveTvSubscriptionsByPackage || {}).map(([key, value]) => ({
+    package: packageLabels[key as keyof typeof packageLabels],
+    count: value as number
+  }));
+  const maxLiveTvByPackage = Math.max(...liveTvByPackageData.map(d => d.count), 1);
+
   return (
     <div className="container-mobile space-y-6 pb-6">
           {/* Header */}
@@ -632,6 +639,115 @@ export default function AdminAnalyticsPage() {
                   color="bg-gradient-to-t from-primary-500 to-primary-400"
                   height={150}
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* Live TV Subscriptions by Package */}
+          <div className="glass-effect rounded-lg p-6">
+            <h2 className="text-xl font-bold text-dark-100 mb-2 flex items-center space-x-2">
+              <Tv size={24} className="text-emerald-400" />
+              <span>Active Live TV Subscriptions by Package</span>
+            </h2>
+            <p className="text-sm text-dark-400 mb-6">
+              {analytics.liveTvSubscriptions} users have an active Live TV subscription
+            </p>
+
+            <div className="space-y-4 mb-6">
+              {liveTvByPackageData.map((item, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-dark-300 font-medium">{item.package}</span>
+                    <span className="text-dark-100 font-semibold">{item.count} users</span>
+                  </div>
+                  <ProgressBar
+                    label=""
+                    value={item.count}
+                    max={maxLiveTvByPackage}
+                    color="bg-emerald-500"
+                    showValue={false}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-dark-100 mb-4">Live TV Distribution</h3>
+              <div className="bg-dark-800/30 rounded-lg p-4">
+                <SimpleBarChart
+                  data={liveTvByPackageData}
+                  maxValue={maxLiveTvByPackage}
+                  labelKey="package"
+                  valueKey="count"
+                  color="bg-gradient-to-t from-emerald-500 to-emerald-400"
+                  height={150}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Who pays for what — revenue & paying users by type */}
+          <div className="glass-effect rounded-lg p-6">
+            <h2 className="text-xl font-bold text-dark-100 mb-6 flex items-center space-x-2">
+              <DollarSign size={24} className="text-primary-400" />
+              <span>Revenue &amp; Paying Users by Type</span>
+            </h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Normal subscriptions */}
+              <div className="p-4 bg-blue-500/15 border border-blue-500/30 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Package size={18} className="text-blue-400" />
+                  <span className="text-sm font-semibold text-blue-300">Normal / Movies</span>
+                </div>
+                <p className="text-xl font-black text-blue-300">
+                  TSH {analytics.revenueByType?.normalSub.revenue.toLocaleString() ?? 0}
+                </p>
+                <p className="text-xs text-dark-400 mt-1">
+                  {analytics.revenueByType?.normalSub.count ?? 0} payments
+                </p>
+              </div>
+
+              {/* Live TV */}
+              <div className="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Tv size={18} className="text-emerald-400" />
+                  <span className="text-sm font-semibold text-emerald-300">Live TV</span>
+                </div>
+                <p className="text-xl font-black text-emerald-300">
+                  TSH {analytics.revenueByType?.liveTvSub.revenue.toLocaleString() ?? 0}
+                </p>
+                <p className="text-xs text-dark-400 mt-1">
+                  {analytics.revenueByType?.liveTvSub.count ?? 0} payments
+                </p>
+              </div>
+
+              {/* Content (pay-per-view) */}
+              <div className="p-4 bg-amber-500/15 border border-amber-500/30 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Film size={18} className="text-amber-400" />
+                  <span className="text-sm font-semibold text-amber-300">Content (PPV)</span>
+                </div>
+                <p className="text-xl font-black text-amber-300">
+                  TSH {analytics.revenueByType?.content.revenue.toLocaleString() ?? 0}
+                </p>
+                <p className="text-xs text-dark-400 mt-1">
+                  {analytics.revenueByType?.content.count ?? 0} payments
+                </p>
+              </div>
+
+              {/* Games */}
+              <div className="p-4 bg-purple-500/15 border border-purple-500/30 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Target size={18} className="text-purple-400" />
+                  <span className="text-sm font-semibold text-purple-300">Games</span>
+                </div>
+                <p className="text-xl font-black text-purple-300">
+                  TSH {analytics.revenueByType?.game.revenue.toLocaleString() ?? 0}
+                </p>
+                <p className="text-xs text-dark-400 mt-1">
+                  {analytics.revenueByType?.game.count ?? 0} payments
+                </p>
               </div>
             </div>
           </div>

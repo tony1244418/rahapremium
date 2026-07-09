@@ -544,6 +544,16 @@ export interface DetailedAnalytics {
   blockedUsers: number;
   revenueByPackage: { FEDHA: number; CHUMA: number; DHAHABU: number; ALMASI: number; MALKIA: number; };
   subscriptionsByPackage: { FEDHA: number; CHUMA: number; DHAHABU: number; ALMASI: number; MALKIA: number; };
+  liveTvSubscriptionsByPackage: { FEDHA: number; CHUMA: number; DHAHABU: number; ALMASI: number; MALKIA: number; };
+  normalSubscriptions: number;      // users with an active normal/movies package
+  liveTvSubscriptions: number;      // users with an active Live TV package
+  // Completed revenue + paying-user counts broken down by what was purchased.
+  revenueByType: {
+    normalSub: { revenue: number; count: number };
+    liveTvSub: { revenue: number; count: number };
+    content: { revenue: number; count: number };
+    game: { revenue: number; count: number };
+  };
   totalPayments: number;
   completedPayments: number;
   failedPayments: number;
@@ -570,8 +580,8 @@ export const getDetailedAnalytics = async (): Promise<DetailedAnalytics> => {
 
   // Fetch data
   const [{ data: users }, { data: payments }] = await Promise.all([
-    supabase.from('rahapremium_users').select('created_at, subscription'),
-    supabase.from('payments').select('amount, status, created_at, completed_at, package_type, order_id')
+    supabase.from('rahapremium_users').select('created_at, subscription, live_tv_subscription'),
+    supabase.from('payments').select('amount, status, created_at, completed_at, package_type, payment_type, package_category, order_id')
   ]);
 
   const allUsers = users || [];
@@ -583,11 +593,22 @@ export const getDetailedAnalytics = async (): Promise<DetailedAnalytics> => {
   
   const revenueByPackage = { FEDHA: 0, CHUMA: 0, DHAHABU: 0, ALMASI: 0, MALKIA: 0 };
   const subscriptionsByPackage = { FEDHA: 0, CHUMA: 0, DHAHABU: 0, ALMASI: 0, MALKIA: 0 };
+  const liveTvSubscriptionsByPackage = { FEDHA: 0, CHUMA: 0, DHAHABU: 0, ALMASI: 0, MALKIA: 0 };
+  let normalSubscriptions = 0;
+  let liveTvSubscriptions = 0;
   
   let totalPayments = allPayments.length;
   let completedPayments = 0;
   let failedPayments = 0;
   let cancelledPayments = 0;
+
+  // Revenue + count by purchase type (only completed, non-manual payments)
+  const revenueByType = {
+    normalSub: { revenue: 0, count: 0 },
+    liveTvSub: { revenue: 0, count: 0 },
+    content: { revenue: 0, count: 0 },
+    game: { revenue: 0, count: 0 },
+  };
 
   const dailyStatsMap = new Map<string, { revenue: number; users: number; completed: number; failed: number }>();
   
@@ -618,9 +639,19 @@ export const getDetailedAnalytics = async (): Promise<DetailedAnalytics> => {
     }
 
     if (user.subscription && user.subscription.isActive && new Date(user.subscription.endDate) > now) {
+      normalSubscriptions++;
       const pkg = user.subscription.packageType as keyof typeof subscriptionsByPackage;
       if (subscriptionsByPackage[pkg] !== undefined) {
         subscriptionsByPackage[pkg]++;
+      }
+    }
+
+    // Independent Live TV subscription
+    if (user.live_tv_subscription && user.live_tv_subscription.isActive && new Date(user.live_tv_subscription.endDate) > now) {
+      liveTvSubscriptions++;
+      const pkg = user.live_tv_subscription.packageType as keyof typeof liveTvSubscriptionsByPackage;
+      if (liveTvSubscriptionsByPackage[pkg] !== undefined) {
+        liveTvSubscriptionsByPackage[pkg]++;
       }
     }
   });
@@ -664,6 +695,23 @@ export const getDetailedAnalytics = async (): Promise<DetailedAnalytics> => {
           if (revenueByPackage[pkg] !== undefined) {
             revenueByPackage[pkg] += amt;
           }
+
+          // Break down by purchase type so admin sees who pays for what.
+          const ptype = (payment.payment_type || 'subscription').toLowerCase();
+          const isLiveTvPayment = (payment.package_category || '').toUpperCase() === 'LIVETV';
+          if (ptype === 'content') {
+            revenueByType.content.revenue += amt;
+            revenueByType.content.count += 1;
+          } else if (ptype === 'game') {
+            revenueByType.game.revenue += amt;
+            revenueByType.game.count += 1;
+          } else if (isLiveTvPayment) {
+            revenueByType.liveTvSub.revenue += amt;
+            revenueByType.liveTvSub.count += 1;
+          } else {
+            revenueByType.normalSub.revenue += amt;
+            revenueByType.normalSub.count += 1;
+          }
         }
       }
     }
@@ -688,6 +736,10 @@ export const getDetailedAnalytics = async (): Promise<DetailedAnalytics> => {
     dailyRevenue,
     revenueByPackage,
     subscriptionsByPackage,
+    liveTvSubscriptionsByPackage,
+    normalSubscriptions,
+    liveTvSubscriptions,
+    revenueByType,
     totalPayments,
     completedPayments,
     failedPayments,
