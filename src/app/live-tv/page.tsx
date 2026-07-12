@@ -210,35 +210,44 @@ function LiveTVContent() {
         setSelectedChannel(channel);
         return;
       }
-      // Premium channel — check server-side trial eligibility
+      // Premium channel — check server-side trial eligibility.
+      // The free trial is meant to be generous to new users, so we only send
+      // the user to the paywall when the server EXPLICITLY confirms the trial
+      // was already used (canTrial === false). Any API/network error, or an
+      // unexpected/error response body, fails OPEN and still grants the trial,
+      // instead of wrongly bouncing a brand-new user straight to the paywall.
       try {
         const res = await fetch(`/api/live-trial?userId=${user.uid}`);
-        const data = await res.json();
-        
-        if (!data.canTrial) {
-          // Trial already used recently — show subscribe page
+        const data = await res.json().catch(() => null);
+
+        if (res.ok && data && data.canTrial === false) {
+          // Trial already used within the last 24h — show subscribe page
           router.push(`/subscriptions?type=livetv&redirect=${encodeURIComponent(`/live-tv?channel=${channel.id}`)}`);
           return;
         }
 
-        // Mark trial as used via API
-        await fetch('/api/live-trial', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: user.uid })
-        });
-        
+        // Eligible (or eligibility unknown) — record trial usage. Best-effort:
+        // never block playback if this write fails.
+        try {
+          await fetch('/api/live-trial', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.uid })
+          });
+        } catch { /* ignore — trial is still granted */ }
+
         // Save locally just for the visual countdown timer on the frontend
         try { localStorage.setItem('livetvTrialLastUsed', Date.now().toString()); } catch {}
-        
+
         setIsTrial(true);
         setTrialSecondsLeft(TRIAL_DURATION);
         setTrialExpired(false);
       } catch (err) {
         console.error('Error fetching trial status:', err);
-        // Fallback to strict access if API fails
-        router.push(`/subscriptions?type=livetv&redirect=${encodeURIComponent(`/live-tv?channel=${channel.id}`)}`);
-        return;
+        // API unreachable — fail OPEN so a new user still gets their free trial.
+        setIsTrial(true);
+        setTrialSecondsLeft(TRIAL_DURATION);
+        setTrialExpired(false);
       }
     } else {
       setIsTrial(false);
