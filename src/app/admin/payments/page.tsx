@@ -13,20 +13,22 @@ import {
 // ── Gateway detection helper ──────────────────────────────────────────────
 // Uses completed_by (most reliable) then falls back to order reference format.
 // Our ClickPesa refs start with C and are 10-20 uppercase alphanumeric chars.
-function detectGateway(payment: { order_id?: string; completed_by?: string | null }): 'clickpesa' | 'harakapay' {
+function detectGateway(payment: { order_id?: string; completed_by?: string | null }): 'clickpesa' | 'pressopay' {
   // 1. completed_by is the most reliable signal
   const cb = (payment.completed_by || '').toLowerCase();
-  if (cb.includes('harakapay')) return 'harakapay';
+  if (cb.includes('presso')) return 'pressopay';
   if (cb.includes('clickpesa')) return 'clickpesa';
+  // Legacy HarakaPay records were completed via a non-ClickPesa gateway; treat
+  // them like the current primary (Pressso) for status-check routing.
+  if (cb.includes('harakapay')) return 'pressopay';
 
   // 2. Fallback: inspect order reference format
   const ref = (payment.order_id || '').trim();
-  if (ref.startsWith('HP')) return 'harakapay';
   // ClickPesa refs we generate: C + 10-19 uppercase alphanum (e.g. CCTLT3XYWD2KAK)
   if (/^C[A-Z0-9]{9,18}$/.test(ref)) return 'clickpesa';
-  
-  // Default to harakapay for unknown non-ClickPesa formats
-  return 'harakapay';
+
+  // Default to the primary gateway (Pressso) for unknown formats
+  return 'pressopay';
 }
 
 interface Payment {
@@ -70,11 +72,11 @@ const STATUS_ICONS = {
 interface GatewayRevenue {
   total: number;
   clickpesa: number;
-  harakapay: number;
+  pressopay: number;
   manual: number;
   count: number;
   cpCount: number;
-  hpCount: number;
+  ppCount: number;
   manualCount: number;
 }
 
@@ -121,10 +123,10 @@ export default function AdminPaymentsPage() {
         acc.total += amt;
         const gw = detectGateway(p);
         if (gw === 'clickpesa') { acc.clickpesa += amt; acc.cpCount += 1; }
-        else { acc.harakapay += amt; acc.hpCount += 1; }
+        else { acc.pressopay += amt; acc.ppCount += 1; }
         return acc;
       },
-      { total: 0, clickpesa: 0, harakapay: 0, manual: 0, count: 0, cpCount: 0, hpCount: 0, manualCount: 0 }
+      { total: 0, clickpesa: 0, pressopay: 0, manual: 0, count: 0, cpCount: 0, ppCount: 0, manualCount: 0 }
     );
   };
 
@@ -267,7 +269,7 @@ export default function AdminPaymentsPage() {
 
       // Trigger the webhook logic by calling the webhook endpoint with COMPLETED status
       const gateway = detectGateway(payment);
-      const webhookPath = gateway === 'clickpesa' ? '/api/webhook/clickpesa' : '/api/webhook/harakapay';
+      const webhookPath = gateway === 'clickpesa' ? '/api/webhook/clickpesa' : '/api/webhook/pressopay';
       
       const webhookRes = await fetch(webhookPath, {
         method: 'POST',
@@ -466,10 +468,10 @@ export default function AdminPaymentsPage() {
                 <div className="flex items-center justify-between text-xs">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-primary-400 inline-block"></span>
-                    <span className="text-dark-400">HarakaPay</span>
-                    <span className="text-dark-600">({todayRevenue.hpCount})</span>
+                    <span className="text-dark-400">Pressso</span>
+                    <span className="text-dark-600">({todayRevenue.ppCount})</span>
                   </span>
-                  <span className="font-semibold text-primary-300">TSH {todayRevenue.harakapay.toLocaleString()}</span>
+                  <span className="font-semibold text-primary-300">TSH {todayRevenue.pressopay.toLocaleString()}</span>
                 </div>
                 {todayRevenue.manualCount > 0 && (
                   <div className="flex items-center justify-between text-xs pt-1 border-t border-dark-700/40">
@@ -507,10 +509,10 @@ export default function AdminPaymentsPage() {
                 <div className="flex items-center justify-between text-xs">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-primary-400 inline-block"></span>
-                    <span className="text-dark-400">HarakaPay</span>
-                    <span className="text-dark-600">({yesterdayRevenue.hpCount})</span>
+                    <span className="text-dark-400">Pressso</span>
+                    <span className="text-dark-600">({yesterdayRevenue.ppCount})</span>
                   </span>
-                  <span className="font-semibold text-primary-300">TSH {yesterdayRevenue.harakapay.toLocaleString()}</span>
+                  <span className="font-semibold text-primary-300">TSH {yesterdayRevenue.pressopay.toLocaleString()}</span>
                 </div>
                 {yesterdayRevenue.manualCount > 0 && (
                   <div className="flex items-center justify-between text-xs pt-1 border-t border-dark-700/40">
@@ -551,10 +553,10 @@ export default function AdminPaymentsPage() {
                 <div className="flex items-center justify-between text-xs">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-primary-400 inline-block"></span>
-                    <span className="text-dark-400">HarakaPay</span>
-                    <span className="text-dark-600">({weekRevenue.hpCount})</span>
+                    <span className="text-dark-400">Pressso</span>
+                    <span className="text-dark-600">({weekRevenue.ppCount})</span>
                   </span>
-                  <span className="font-semibold text-primary-300">TSH {weekRevenue.harakapay.toLocaleString()}</span>
+                  <span className="font-semibold text-primary-300">TSH {weekRevenue.pressopay.toLocaleString()}</span>
                 </div>
                 {weekRevenue.manualCount > 0 && (
                   <div className="flex items-center justify-between text-xs pt-1 border-t border-dark-700/40">
@@ -592,10 +594,10 @@ export default function AdminPaymentsPage() {
                 <div className="flex items-center justify-between text-xs">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-primary-400 inline-block"></span>
-                    <span className="text-dark-400">HarakaPay</span>
-                    <span className="text-dark-600">({monthRevenue.hpCount})</span>
+                    <span className="text-dark-400">Pressso</span>
+                    <span className="text-dark-600">({monthRevenue.ppCount})</span>
                   </span>
-                  <span className="font-semibold text-primary-300">TSH {monthRevenue.harakapay.toLocaleString()}</span>
+                  <span className="font-semibold text-primary-300">TSH {monthRevenue.pressopay.toLocaleString()}</span>
                 </div>
                 {monthRevenue.manualCount > 0 && (
                   <div className="flex items-center justify-between text-xs pt-1 border-t border-dark-700/40">
@@ -632,14 +634,14 @@ export default function AdminPaymentsPage() {
                 <div className="text-base font-black text-blue-300">TSH {allTimeRevenue.clickpesa.toLocaleString()}</div>
                 <div className="text-xs text-blue-500 mt-0.5">{allTimeRevenue.cpCount} transactions</div>
               </div>
-              {/* HarakaPay */}
+              {/* Pressso */}
               <div className="bg-primary-500/10 border border-primary-500/20 rounded-lg p-3">
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="w-2 h-2 rounded-full bg-primary-400 inline-block"></span>
-                  <span className="text-xs font-bold text-primary-300">HarakaPay</span>
+                  <span className="text-xs font-bold text-primary-300">Pressso</span>
                 </div>
-                <div className="text-base font-black text-primary-300">TSH {allTimeRevenue.harakapay.toLocaleString()}</div>
-                <div className="text-xs text-primary-500 mt-0.5">{allTimeRevenue.hpCount} transactions</div>
+                <div className="text-base font-black text-primary-300">TSH {allTimeRevenue.pressopay.toLocaleString()}</div>
+                <div className="text-xs text-primary-500 mt-0.5">{allTimeRevenue.ppCount} transactions</div>
               </div>
               {/* Manual — always shown in all-time */}
               <div className="bg-primary-500/10 border border-primary-500/20 rounded-lg p-3">
@@ -854,11 +856,9 @@ export default function AdminPaymentsPage() {
                               <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold ${
                                 detectGateway(payment) === 'clickpesa'
                                   ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
-                                  : detectGateway(payment) === 'harakapay'
-                                  ? 'bg-primary-500/15 text-primary-400 border-primary-500/30'
                                   : 'bg-primary-500/15 text-primary-400 border-primary-500/30'
                               }`}>
-                                {detectGateway(payment) === 'clickpesa' ? 'ClickPesa' : 'HarakaPay'}
+                                {detectGateway(payment) === 'clickpesa' ? 'ClickPesa' : 'Pressso'}
                               </span>
                             </div>
 

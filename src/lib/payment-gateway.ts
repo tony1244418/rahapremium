@@ -1,9 +1,10 @@
 /**
  * Payment Gateway Abstraction
- * Priority 1: HarakaPay  (USSD Push) — primary
- * Priority 2: ClickPesa  (USSD Push) — silent fallback on HarakaPay failure
+ * Priority 1: Pressso Pay (USSD Push) — primary
+ * Priority 2: ClickPesa   (USSD Push) — silent fallback on Pressso failure
  */
 import axios from 'axios';
+import { createHmac, randomUUID } from 'crypto';
 
 // ─── ClickPesa Config ────────────────────────────────────────────────────────
 const CLICKPESA_API_BASE  = 'https://api.clickpesa.com/third-parties';
@@ -20,40 +21,37 @@ const CLICKPESA_CALLBACK_URL =
     ? `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhook/clickpesa`
     : 'https://www.rahapremium.com/api/webhook/clickpesa');
 
-// ─── HarakaPay Config ─────────────────────────────────────────────────────────
-const HARAKAPAY_API_BASE = 'https://harakapay.net/api/v1';
-const HARAKAPAY_API_KEY  =
-  process.env.HARAKAPAY_API_KEY || 'hpk_046ea9438f16e1ac82cacde860b3be51c660fcd2f71230f0';
-
-// Optional webhook URL for HarakaPay callbacks
-const HARAKAPAY_WEBHOOK_URL =
-  process.env.HARAKAPAY_WEBHOOK_URL ||
-  (process.env.NEXT_PUBLIC_SITE_URL
-    ? `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhook/harakapay`
-    : 'https://www.rahapremium.com/api/webhook/harakapay');
-
-
+// ─── Pressso Pay Config ────────────────────────────────────────────────────────
+// Base URL and credentials come from server-side env vars. The SECRET must
+// NEVER be exposed to the browser or committed — it lives in .env.local / the
+// hosting environment only.
+const PRESSSO_BASE       = process.env.PRESSSO_BASE_URL  || 'https://pressopay.com';
+const PRESSSO_API_KEY    = process.env.PRESSSO_API_KEY    || '';    // pk_...
+const PRESSSO_API_SECRET = process.env.PRESSSO_API_SECRET || '';    // sk_... (shown once at creation)
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+export type PaymentGateway = 'clickpesa' | 'pressopay';
+
 export type GatewayResult = {
   success: boolean;
   message: string;
-  orderId: string;
+  orderId: string;        // gateway reference we persist + poll status with
   ussdCode?: string;
+  checkoutUrl?: string;   // Pressso fallback link (USSD push is automatic)
   phoneNumber: string;
   amount: number;
-  gateway: 'clickpesa' | 'harakapay';
+  gateway: PaymentGateway;
 };
 
 export type StatusResult = {
   status: 'success' | 'error';
   order_id: string;
-  payment_status: string; // COMPLETED | SUCCESS | SETTLED | FAILED | PENDING | PROCESSING
+  payment_status: string; // COMPLETED | SUCCESS | SETTLED | FAILED | PENDING | PROCESSING | CANCELLED
   message: string;
   amount?: string | number;
   channel?: string;
   reference?: string;
-  gateway: 'clickpesa' | 'harakapay';
+  gateway: PaymentGateway;
 };
 
 // ─── ClickPesa Token Cache ────────────────────────────────────────────────────
@@ -106,7 +104,6 @@ function toClickPesaOrderRef(orderId: string): string {
 
 /**
  * Generate a short, unique ClickPesa orderReference starting with "C".
- * Format: C + 3 random uppercase letters + base36(timestamp last 6 digits) + 4 random uppercase alphanumeric
  * Example: CPMOT2GRR855  (always ≤ 20 chars, always starts with C)
  */
 function generateClickPesaRef(): string {
@@ -115,6 +112,96 @@ function generateClickPesaRef(): string {
     Array.from({ length: n }, () => CHARS[Math.floor(Math.random() * CHARS.length)]).join('');
   const tsPart = Date.now().toString(36).toUpperCase().slice(-6); // last 6 of base36 timestamp
   return 'C' + rand(3) + tsPart + rand(4); // e.g. CPMOT2GRR855 (14 chars)
+}
+
+// ─── Pressso: HMAC signing ──────────────────────────────────────────────────
+/**
+ * Lowercase-hex HMAC-SHA256 of five lines joined by a single newline:
+ * timestamp, nonce, uppercase HTTP method, request path, and the EXACT raw
+ * JSON body (empty string for GET).
+ */
+function presssoSign(
+  timestamp: string,
+  nonce: string,
+  method: string,
+  path: string,
+  rawBody: string
+): string {
+  const canonical = [timestamp, nonce, method.toUpperCase(), path, rawBody].join('\n');
+  return createHmac('sha256', PRESSSO_API_SECRET).update(canonical).digest('hex');
+}
+
+// ─── Pressso: Initiate ────────────────────────────────────────────────────────
+
+async function initiatePressso(
+  orderId: string,
+  phoneNumber: string,
+  amount: number,
+  buyerName: string,
+  buyerEmail?: string
+): Promise<GatewayResult> {
+  if (!PRESSSO_API_KEY || !PRESSSO_API_SECRET) {
+    throw new Error('Pressso credentials are not configured');
+  }
+
+  const path      = '/api/v1/checkouts';
+  const timestamp = new Date().toISOString();
+  const nonce     = randomUUID();
+
+  // Pressso requires buyerEmail. Our users register by phone (no email), so
+  // fall back to a synthetic but valid-format address derived from the phone.
+  const emailValid = buyerEmail && /^\S+@\S+\.\S+$/.test(buyerEmail);
+  const email = emailValid
+    ? (buyerEmail as string)
+    : `user${phoneNumber.replace(/\D/g, '')}@rahapremium.com`;
+
+  // amountMinor for TZS is whole shillings (TZS has no sub-unit in practice).
+  const rawBody = JSON.stringify({
+    merchantReference: orderId,                 // our unique order id
+    amountMinor:       Math.round(amount),      // whole TZS
+    buyerName:         buyerName || 'Customer',
+    buyerEmail:        email,
+    buyerPhone:        phoneNumber,
+    description:       `Payment ${orderId}`,
+  });
+
+  const signature = presssoSign(timestamp, nonce, 'POST', path, rawBody);
+
+  console.log('[Pressso] Initiating checkout:', rawBody);
+
+  const resp = await axios.post(`${PRESSSO_BASE}${path}`, rawBody, {
+    headers: {
+      'Content-Type':        'application/json',
+      'Idempotency-Key':     randomUUID(),
+      'X-Pressso-Key':       PRESSSO_API_KEY,
+      'X-Pressso-Timestamp': timestamp,
+      'X-Pressso-Nonce':     nonce,
+      'X-Pressso-Signature': signature,
+    },
+    timeout: 30000,
+  });
+
+  console.log('[Pressso] Response:', JSON.stringify(resp.data));
+
+  // { reference, merchantReference, status, checkoutUrl }
+  const data      = resp.data || {};
+  const reference = data.reference;
+  const status    = (data.status || '').toUpperCase();
+
+  if (reference && status !== 'FAILED' && status !== 'CANCELLED') {
+    return {
+      success:     true,
+      message:     'USSD push sent. Please check your phone and enter your PIN.',
+      orderId:     reference,          // persist Pressso reference for status polling
+      ussdCode:    '*150*00#',
+      checkoutUrl: data.checkoutUrl,
+      phoneNumber,
+      amount,
+      gateway:     'pressopay',
+    };
+  }
+
+  throw new Error(`Pressso unexpected status: ${data.status} — ${data.message || ''}`);
 }
 
 // ─── ClickPesa: Initiate ──────────────────────────────────────────────────────
@@ -173,61 +260,12 @@ async function initiateClickPesa(
   );
 }
 
-// ─── HarakaPay: Initiate ──────────────────────────────────────────────────────
-
-async function initiateHarakaPay(
-  orderId: string,
-  phoneNumber: string,
-  amount: number,
-  _buyerName: string
-): Promise<GatewayResult> {
-  const payload = {
-    phone:       phoneNumber,
-    amount,
-    description: `Payment ${orderId}`,
-    webhook_url: HARAKAPAY_WEBHOOK_URL,
-  };
-
-  console.log('[HarakaPay] Initiating USSD push:', JSON.stringify(payload));
-
-  const resp = await axios.post(
-    `${HARAKAPAY_API_BASE}/collect`,
-    payload,
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key':    HARAKAPAY_API_KEY,
-      },
-      timeout: 30000,
-    }
-  );
-
-  console.log('[HarakaPay] Response:', JSON.stringify(resp.data));
-
-  if (resp.data?.success === true) {
-    return {
-      success:  true,
-      message:  resp.data.message || 'USSD push sent. Please check your phone and enter your PIN.',
-      orderId:  resp.data.order_id || orderId,
-      ussdCode: '*150*00#',
-      phoneNumber,
-      amount,
-      gateway:  'harakapay',
-    };
-  }
-
-  throw new Error(
-    resp.data?.error || resp.data?.message || 'HarakaPay payment initiation failed'
-  );
-}
-
-
 // ─── Public: Initiate Payment ─────────────────────────────────────────────────
 
 /**
  * Payment waterfall:
- *   1. HarakaPay  — primary
- *   2. ClickPesa  — silent fallback if HarakaPay fails
+ *   1. Pressso Pay — primary
+ *   2. ClickPesa   — silent fallback if Pressso fails
  *
  * The user never sees which gateway was used.
  */
@@ -235,16 +273,17 @@ export async function initiatePayment(
   orderId: string,
   phoneNumber: string,
   amount: number,
-  buyerName: string
+  buyerName: string,
+  buyerEmail?: string
 ): Promise<GatewayResult> {
-  // ── 1. Try HarakaPay ─────────────────────────────────────────────────────
+  // ── 1. Try Pressso ─────────────────────────────────────────────────────────
   try {
-    const result = await initiateHarakaPay(orderId, phoneNumber, amount, buyerName);
-    console.log('[Gateway] Payment initiated via HarakaPay');
+    const result = await initiatePressso(orderId, phoneNumber, amount, buyerName, buyerEmail);
+    console.log('[Gateway] Payment initiated via Pressso');
     return result;
   } catch (err: any) {
     console.warn(
-      '[Gateway] HarakaPay failed — switching to ClickPesa. Reason:',
+      '[Gateway] Pressso failed — switching to ClickPesa. Reason:',
       err?.response?.data || err?.message
     );
   }
@@ -266,50 +305,63 @@ export async function initiatePayment(
   }
 }
 
+// ─── Pressso: Query status ────────────────────────────────────────────────────
+
+async function queryPresssoStatus(reference: string): Promise<StatusResult | null> {
+  if (!PRESSSO_API_KEY || !PRESSSO_API_SECRET) return null;
+
+  const path      = `/api/v1/payments/${reference}`;
+  const timestamp = new Date().toISOString();
+  const nonce     = randomUUID();
+  const signature = presssoSign(timestamp, nonce, 'GET', path, ''); // empty body for GET
+
+  const resp = await axios.get(`${PRESSSO_BASE}${path}`, {
+    headers: {
+      'X-Pressso-Key':       PRESSSO_API_KEY,
+      'X-Pressso-Timestamp': timestamp,
+      'X-Pressso-Nonce':     nonce,
+      'X-Pressso-Signature': signature,
+    },
+    timeout: 30000,
+  });
+
+  console.log('[Pressso] Status response:', JSON.stringify(resp.data));
+
+  const data      = resp.data || {};
+  const rawStatus = (data.status || 'PENDING').toUpperCase();
+
+  return {
+    status:         'success',
+    order_id:       data.reference || reference,
+    payment_status: rawStatus, // PENDING | COMPLETED | FAILED | CANCELLED
+    message:        `Pressso: ${rawStatus}`,
+    amount:         data.amountMinor ?? data.amount,
+    reference:      data.reference || reference,
+    gateway:        'pressopay',
+  };
+}
+
 // ─── Public: Query Payment Status ─────────────────────────────────────────────
 
 /**
  * Query payment status.
- * Tries HarakaPay first, then ClickPesa.
+ * Tries Pressso first (unless the caller forces ClickPesa), then ClickPesa.
  */
 export async function queryPaymentStatus(
   orderId: string,
-  gateway?: 'clickpesa' | 'harakapay'
+  gateway?: PaymentGateway
 ): Promise<StatusResult> {
   const orderRef    = toClickPesaOrderRef(orderId);
   const forceClickP = gateway === 'clickpesa';
 
-  // ── 1. Try HarakaPay ─────────────────────────────────────────────────────
+  // ── 1. Try Pressso ─────────────────────────────────────────────────────────
   if (!forceClickP) {
     try {
-      const resp = await axios.get(
-        `${HARAKAPAY_API_BASE}/status/${encodeURIComponent(orderId)}`,
-        {
-          headers: { 'X-API-Key': HARAKAPAY_API_KEY },
-          timeout: 30000,
-        }
-      );
-
-      console.log('[HarakaPay] Status response:', JSON.stringify(resp.data));
-
-      if (resp.data?.success === true && resp.data?.payment) {
-        const payment = resp.data.payment;
-        const rawStatus = (payment.status || 'PENDING').toUpperCase();
-        const normalizedStatus =
-          rawStatus === 'COMPLETED' || rawStatus === 'SUCCESS' ? 'COMPLETED' : rawStatus;
-
-        return {
-          status:         'success',
-          order_id:       payment.order_id || orderId,
-          payment_status: normalizedStatus,
-          message:        `HarakaPay: ${normalizedStatus}`,
-          amount:         payment.amount,
-          gateway:        'harakapay',
-        };
-      }
+      const result = await queryPresssoStatus(orderId);
+      if (result) return result;
     } catch (err: any) {
       console.warn(
-        '[Gateway] HarakaPay status check failed — trying ClickPesa:',
+        '[Gateway] Pressso status check failed — trying ClickPesa:',
         err?.response?.data || err?.message
       );
     }
@@ -366,6 +418,6 @@ export async function queryPaymentStatus(
     order_id:       orderId,
     payment_status: 'UNKNOWN',
     message:        'Failed to retrieve payment status',
-    gateway:        'harakapay',
+    gateway:        gateway || 'pressopay',
   };
 }

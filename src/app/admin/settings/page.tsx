@@ -428,7 +428,7 @@ export default function AdminSettingsPage() {
 
   const integrations: IntegrationDefinition[] = [
     {
-      name: 'ClickPesa & HarakaPay',
+      name: 'ClickPesa & Pressso',
       description: 'Real-time subscription syncing',
       status: 'active',
       icon: Send,

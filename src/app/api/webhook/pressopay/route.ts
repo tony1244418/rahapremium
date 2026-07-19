@@ -3,18 +3,21 @@ import { supabaseServer } from '@/lib/supabase-server';
 import { User, PaymentStatus } from '@/types';
 
 /**
- * HarakaPay Webhook Handler
- * HarakaPay posts payment status updates here after USSD push is confirmed or fails.
+ * Pressso Pay Webhook Handler
  *
- * Expected payload from HarakaPay:
+ * Pressso posts payment status updates here, and our own /api/payment/status
+ * route also calls this internally (fallback) once polling confirms a payment.
+ *
+ * The payment record's `order_id` stores the Pressso `reference`, so we match
+ * on reference / order_id / merchantReference.
+ *
+ * Accepted payload shape (best-effort — Pressso + internal fallback):
  * {
- *   "order_id": "HP1706123456789",
- *   "status": "completed" | "failed",
- *   "amount": 10000,
- *   "net_amount": 9400,
- *   "fee_amount": 600,
- *   "created_at": "...",
- *   "completed_at": "..."
+ *   "reference": "...",              // Pressso payment reference (== our order_id)
+ *   "merchantReference": "PAY_...",  // our original order id
+ *   "order_id": "...",               // internal fallback
+ *   "status": "COMPLETED" | "FAILED" | "CANCELLED" | "PENDING",
+ *   "amountMinor": 5000
  * }
  */
 
@@ -26,31 +29,36 @@ const toDate = (dateStr: string | null | undefined): Date => {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('🔔 HarakaPay Webhook received:', JSON.stringify(body, null, 2));
+    console.log('🔔 Pressso Webhook received:', JSON.stringify(body, null, 2));
 
-    const orderId: string   = body.order_id || '';
-    const rawStatus: string = body.status   || '';
-    const amount            = body.amount   || '';
+    // Our DB order_id == Pressso reference. Accept a few field names so the
+    // real Pressso callback and the internal fallback both work.
+    const orderId: string =
+      body.order_id || body.reference || body.merchantReference || '';
+    const rawStatus: string = body.status || body.payment_status || '';
+    const amount            = body.amountMinor || body.amount || '';
 
     if (!orderId) {
-      console.error('❌ HarakaPay Webhook: order_id missing');
-      return NextResponse.json({ success: false, message: 'order_id required' }, { status: 400 });
+      console.error('❌ Pressso Webhook: reference/order_id missing');
+      return NextResponse.json({ success: false, message: 'reference required' }, { status: 400 });
     }
 
     const statusUpper      = rawStatus.toUpperCase().trim();
     const normalizedStatus =
-      statusUpper === 'COMPLETED' || statusUpper === 'SUCCESS' ? 'COMPLETED' : statusUpper;
+      statusUpper === 'COMPLETED' || statusUpper === 'SUCCESS' || statusUpper === 'SETTLED'
+        ? 'COMPLETED'
+        : statusUpper;
 
-    console.log(`[HarakaPay Webhook] order_id=${orderId} status=${statusUpper} → ${normalizedStatus}`);
+    console.log(`[Pressso Webhook] order_id=${orderId} status=${statusUpper} → ${normalizedStatus}`);
 
-    // Find payment record
+    // Find payment record (order_id stores the Pressso reference)
     const { data: paymentDocs, error: paymentError } = await supabaseServer
       .from('payments')
       .select('*')
       .eq('order_id', orderId);
 
     if (paymentError || !paymentDocs || paymentDocs.length === 0) {
-      console.error('❌ HarakaPay Webhook: Payment not found for order_id:', orderId);
+      console.error('❌ Pressso Webhook: Payment not found for order_id:', orderId);
       return NextResponse.json({ success: false, message: 'Payment not found' });
     }
 
@@ -77,20 +85,17 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (userError || !userData) {
-      console.error('❌ HarakaPay Webhook: User not found:', paymentDoc.user_id);
+      console.error('❌ Pressso Webhook: User not found:', paymentDoc.user_id);
       return NextResponse.json({ success: false, message: 'User not found' });
     }
 
     // ── SECURITY: Verify phone number matches ─────────────────────────────────
-    // The payment's phone_number must match the account's registered phone_number.
-    // This prevents a payment made by one phone from being credited to an account
-    // that registered later with the same number.
     const paymentPhone = (paymentDoc.phone_number || '').replace(/\s+/g, '').replace(/^\+255/, '0').replace(/^255/, '0');
     const accountPhone = (userData.phone_number   || '').replace(/\s+/g, '').replace(/^\+255/, '0').replace(/^255/, '0');
 
     if (paymentPhone && accountPhone && paymentPhone !== accountPhone) {
       console.error(
-        `❌ HarakaPay Webhook: Phone mismatch — payment phone=${paymentPhone} account phone=${accountPhone}. Refusing to apply.`
+        `❌ Pressso Webhook: Phone mismatch — payment phone=${paymentPhone} account phone=${accountPhone}. Refusing to apply.`
       );
       await supabaseServer.from('payments').update({ status: 'failed', completed_by: 'phone-mismatch' }).eq('id', paymentId);
       return NextResponse.json({ success: false, message: 'Phone number mismatch — payment not applied' });
@@ -114,7 +119,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (normalizedStatus === 'COMPLETED') {
-      console.log('🎉 HarakaPay: processing completed payment...');
+      console.log('🎉 Pressso: processing completed payment...');
 
       const paymentType = paymentDoc.payment_type || 'subscription';
 
@@ -123,7 +128,7 @@ export async function POST(request: NextRequest) {
         status:                'completed',
         is_manually_completed: false,
         completed_at:          new Date().toISOString(),
-        completed_by:          'harakapay-webhook',
+        completed_by:          'pressopay-webhook',
       }).eq('id', paymentId);
 
       // Update user payment history
@@ -241,9 +246,9 @@ export async function POST(request: NextRequest) {
         await supabaseServer.from('rahapremium_users').update(subUpdatePayload).eq('id', user.uid);
       }
 
-      console.log('✅ HarakaPay Webhook: payment completed for', orderId);
+      console.log('✅ Pressso Webhook: payment completed for', orderId);
 
-    } else if (normalizedStatus === 'FAILED' || normalizedStatus === 'FAIL') {
+    } else if (normalizedStatus === 'FAILED' || normalizedStatus === 'FAIL' || normalizedStatus === 'CANCELLED') {
       await supabaseServer.from('payments').update({ status: 'failed' }).eq('id', paymentId);
       const updatedHistory = (user.paymentHistory || []).map((p: any) =>
         p.id === paymentId ? { ...p, status: 'failed' as PaymentStatus } : p
@@ -251,15 +256,15 @@ export async function POST(request: NextRequest) {
       await supabaseServer.from('rahapremium_users').update({
         payment_history: JSON.parse(JSON.stringify(updatedHistory)),
       }).eq('id', user.uid);
-      console.log('❌ HarakaPay Webhook: payment failed for', orderId);
+      console.log('❌ Pressso Webhook: payment failed for', orderId);
     } else {
-      console.log(`⏳ HarakaPay Webhook: status=${normalizedStatus} not final, ignoring`);
+      console.log(`⏳ Pressso Webhook: status=${normalizedStatus} not final, ignoring`);
     }
 
     return NextResponse.json({ success: true, message: 'Webhook processed' });
 
   } catch (error: any) {
-    console.error('❌ HarakaPay Webhook error:', error?.message);
+    console.error('❌ Pressso Webhook error:', error?.message);
     return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 });
   }
 }

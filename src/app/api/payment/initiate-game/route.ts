@@ -3,7 +3,7 @@ import { initiatePayment } from '@/lib/payment-gateway';
 
 export async function POST(request: NextRequest) {
   try {
-    const { gameId, amount, phoneNumber, userId, buyerName } = await request.json();
+    const { gameId, amount, phoneNumber, userId, buyerName, buyerEmail } = await request.json();
 
     if (!gameId || !amount || !phoneNumber) {
       return NextResponse.json(
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`[/api/payment/initiate-game] gameId=${gameId} phone=${phoneNumber} amount=${amount}`);
 
-    const result = await initiatePayment(orderId, phoneNumber, amount, buyerName || 'Customer');
+    const result = await initiatePayment(orderId, phoneNumber, amount, buyerName || 'Customer', buyerEmail);
 
     return NextResponse.json({
       success: result.success,

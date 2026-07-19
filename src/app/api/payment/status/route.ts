@@ -5,7 +5,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const orderId = searchParams.get('order_id');
-    const gatewayHint = searchParams.get('gateway') as 'clickpesa' | 'harakapay' | null;
+    const gatewayHint = searchParams.get('gateway') as 'clickpesa' | 'pressopay' | null;
 
     if (!orderId) {
       return NextResponse.json(
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
             console.log(`[status] Fallback: completing payment ${paymentId} manually via ${result.gateway} webhook`);
             // Call webhook internally to ensure all logic (content vs subscription) runs correctly
             const baseUrl = request.nextUrl.origin;
-            const webhookPath = result.gateway === 'clickpesa' ? '/api/webhook/clickpesa' : '/api/webhook/harakapay';
+            const webhookPath = result.gateway === 'clickpesa' ? '/api/webhook/clickpesa' : '/api/webhook/pressopay';
             
             await fetch(`${baseUrl}${webhookPath}`, {
               method: 'POST',

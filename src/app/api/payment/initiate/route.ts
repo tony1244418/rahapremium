@@ -3,7 +3,7 @@ import { initiatePayment } from '@/lib/payment-gateway';
 
 export async function POST(request: NextRequest) {
   try {
-    const { packageType, phoneNumber, buyerName, category } = await request.json();
+    const { packageType, phoneNumber, buyerName, buyerEmail, category } = await request.json();
 
     if (!packageType || !phoneNumber) {
       return NextResponse.json(
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`[/api/payment/initiate] package=${packageType} phone=${phoneNumber} amount=${amount}`);
 
-    const result = await initiatePayment(orderId, phoneNumber, amount, buyerName || 'Customer');
+    const result = await initiatePayment(orderId, phoneNumber, amount, buyerName || 'Customer', buyerEmail);
 
     // Generate USSD code per package
     const ussdCodes: Record<string, string> = {

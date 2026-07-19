@@ -182,6 +182,17 @@ export default function SeriesDetailPage({ params }: { params: Promise<{ id: str
     }
   };
 
+  // Auto-open the player immediately when arriving from a successful payment
+  // (?paid=true), matching the movies/adult behaviour. Without this the user
+  // would land on the series detail screen instead of the content opening.
+  useEffect(() => {
+    if (!autoPlay || refreshing || !series || selectedEpisode) return;
+    if (series.seasons && series.seasons.length > 0) {
+      handleSeasonPlay(series.seasons[0]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoPlay, series, refreshing]);
+
   if (loading || refreshing) {
     return (
       <ProtectedRoute>
