@@ -269,6 +269,16 @@ async function initiateClickPesa(
  *
  * The user never sees which gateway was used.
  */
+/** Extract a readable reason from an axios/gateway error. */
+function gatewayErrorReason(err: any): string {
+  const data = err?.response?.data;
+  if (data) {
+    if (typeof data === 'string') return data;
+    return data.error || data.message || JSON.stringify(data);
+  }
+  return err?.message || 'unknown error';
+}
+
 export async function initiatePayment(
   orderId: string,
   phoneNumber: string,
@@ -276,16 +286,17 @@ export async function initiatePayment(
   buyerName: string,
   buyerEmail?: string
 ): Promise<GatewayResult> {
+  const reasons: string[] = [];
+
   // ── 1. Try Pressso ─────────────────────────────────────────────────────────
   try {
     const result = await initiatePressso(orderId, phoneNumber, amount, buyerName, buyerEmail);
     console.log('[Gateway] Payment initiated via Pressso');
     return result;
   } catch (err: any) {
-    console.warn(
-      '[Gateway] Pressso failed — switching to ClickPesa. Reason:',
-      err?.response?.data || err?.message
-    );
+    const reason = gatewayErrorReason(err);
+    reasons.push(`Pressso: ${reason}`);
+    console.warn('[Gateway] Pressso failed — switching to ClickPesa. Reason:', reason);
   }
 
   // ── 2. Try ClickPesa ──────────────────────────────────────────────────────
@@ -294,14 +305,13 @@ export async function initiatePayment(
     console.log('[Gateway] Payment initiated via ClickPesa (fallback)');
     return result;
   } catch (err: any) {
-    console.warn(
-      '[Gateway] ClickPesa failed.',
-      err?.response?.data || err?.message
-    );
+    const reason = gatewayErrorReason(err);
+    reasons.push(`ClickPesa: ${reason}`);
+    console.warn('[Gateway] ClickPesa failed.', reason);
     // Invalidate cached token so next ClickPesa attempt gets a fresh one
     _cpToken = null;
     _cpTokenExpiry = 0;
-    throw new Error('All payment gateways failed. Please try again later.');
+    throw new Error(`All payment gateways failed. ${reasons.join(' | ')}`);
   }
 }
 
