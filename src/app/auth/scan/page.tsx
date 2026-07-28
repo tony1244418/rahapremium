@@ -7,11 +7,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import Link from 'next/link';
 
-// Mirror of AuthContext device limits — defines max simultaneous devices per plan
-const DEVICE_LIMITS: Record<string, number> = {
-  FEDHA: 1, CHUMA: 1, DHAHABU: 1, ALMASI: 2, MALKIA: 4,
-};
-
 function QrScanContent() {
   const { user, loading: authLoading, signOut } = useAuth();
   const router = useRouter();
@@ -232,15 +227,10 @@ function QrScanContent() {
 
       if (error) throw error;
 
-      // Determine device limit from user's active subscription
-      const pkgType = user.subscription?.packageType;
-      const isActiveSub =
-        user.subscription?.isActive === true &&
-        new Date(user.subscription?.endDate) > new Date();
-      const deviceLimit =
-        isActiveSub && pkgType && DEVICE_LIMITS[pkgType]
-          ? DEVICE_LIMITS[pkgType]
-          : 1;
+      // Determine device limit from the admin-configured packages, considering
+      // both the general and Live TV subscriptions.
+      const { getUserDeviceLimit } = await import('@/lib/subscriptions');
+      const deviceLimit = await getUserDeviceLimit(user);
 
       const needsSignOut = deviceLimit <= 1;
       setWillSignOutAfterApprove(needsSignOut);

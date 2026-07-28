@@ -15,8 +15,8 @@ function getSupabaseAdmin() {
   );
 }
 
-// Plan-based device limits
-const DEVICE_LIMITS: Record<string, number> = {
+// Fallback device limits used when a package config does not set maxDevices.
+const DEFAULT_DEVICE_LIMITS: Record<string, number> = {
   FEDHA: 1,
   CHUMA: 1,
   DHAHABU: 1,
@@ -24,15 +24,43 @@ const DEVICE_LIMITS: Record<string, number> = {
   MALKIA: 4,
 };
 
-function getDeviceLimit(packageType?: string | null): number {
-  if (!packageType) return 1;
-  return DEVICE_LIMITS[packageType] ?? 1;
-}
-
 interface ActiveSession {
   deviceId: string;
   lastSeenAt: string;
   deviceLabel: string;
+}
+
+/** Read the admin-configured packages map for a given settings id. */
+async function getPackagesConfig(
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  settingsId: string
+): Promise<Record<string, any>> {
+  try {
+    const { data } = await supabaseAdmin
+      .from('admin_settings')
+      .select('data')
+      .eq('id', settingsId)
+      .single();
+    if (data?.data) {
+      return typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
+    }
+  } catch {
+    /* ignore — fall back to defaults */
+  }
+  return {};
+}
+
+/** Resolve maxDevices for a package from config, falling back to defaults. */
+function packageDeviceLimit(config: Record<string, any>, packageType?: string | null): number {
+  if (!packageType) return 1;
+  const configured = config?.[packageType]?.maxDevices;
+  if (typeof configured === 'number' && configured > 0) return configured;
+  return DEFAULT_DEVICE_LIMITS[packageType] ?? 1;
+}
+
+/** True when a stored subscription object is currently active. */
+function isSubActive(sub: any): boolean {
+  return !!sub && sub.isActive === true && !!sub.endDate && new Date(sub.endDate) > new Date();
 }
 
 export async function POST(request: NextRequest) {
@@ -52,7 +80,7 @@ export async function POST(request: NextRequest) {
     // Find user with this token
     const { data: userData, error: userError } = await supabaseAdmin
       .from('rahapremium_users')
-      .select('id, phone_number, qr_token, qr_token_expires_at, active_sessions, subscription, is_blocked')
+      .select('id, phone_number, qr_token, qr_token_expires_at, active_sessions, subscription, live_tv_subscription, is_blocked')
       .eq('qr_token', token)
       .single();
 
@@ -79,11 +107,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Determine device limit from subscription
-    const packageType: string | null = userData.subscription?.packageType ?? null;
-    const isActive: boolean = userData.subscription?.isActive === true &&
-      new Date(userData.subscription?.endDate) > new Date();
-    const deviceLimit = isActive ? getDeviceLimit(packageType) : 1;
+    // Determine device limit from BOTH the general and Live TV subscriptions,
+    // using the admin-configured maxDevices per package (highest active wins).
+    const [generalConfig, liveTvConfig] = await Promise.all([
+      getPackagesConfig(supabaseAdmin, 'packages'),
+      getPackagesConfig(supabaseAdmin, 'packages_livetv'),
+    ]);
+
+    let deviceLimit = 1;
+    if (isSubActive(userData.subscription)) {
+      deviceLimit = Math.max(
+        deviceLimit,
+        packageDeviceLimit(generalConfig, userData.subscription?.packageType)
+      );
+    }
+    if (isSubActive(userData.live_tv_subscription)) {
+      deviceLimit = Math.max(
+        deviceLimit,
+        packageDeviceLimit(liveTvConfig, userData.live_tv_subscription?.packageType)
+      );
+    }
 
     // Get current sessions
     let sessions: ActiveSession[] = Array.isArray(userData.active_sessions)

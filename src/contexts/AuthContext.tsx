@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { usePlatformControls } from './PlatformControlContext';
 import { User, AdminUser, AuthContextType } from '@/types';
 import { DEVICE_KICKED_EVENT } from '@/components/DeviceConflictModal';
+import { getUserDeviceLimit } from '@/lib/subscriptions';
 
 // ─── Device session key ───────────────────────────────────────────────────────
 const DEVICE_SESSION_KEY = 'raha_device_session_id';
@@ -31,14 +32,9 @@ const getDeviceLabel = (): string => {
   return 'Browser';
 };
 
-/** Plan-based device limits */
-const DEVICE_LIMITS: Record<string, number> = {
-  FEDHA: 1, CHUMA: 1, DHAHABU: 1, ALMASI: 2, MALKIA: 4,
-};
-const getDeviceLimit = (packageType?: string | null, isActive?: boolean): number => {
-  if (!isActive || !packageType) return 1;
-  return DEVICE_LIMITS[packageType] ?? 1;
-};
+// Device limits are resolved from the admin-configured package settings via
+// `getUserDeviceLimit` (see '@/lib/subscriptions'), considering both the
+// general and Live TV subscriptions.
 
 interface ActiveSession {
   deviceId: string;
@@ -100,10 +96,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
             // Add/update this device in active_sessions
             const deviceId = getOrCreateDeviceId();
             const deviceLabel = getDeviceLabel();
-            const pkgType = userData.subscription?.packageType;
-            const isActive = userData.subscription?.isActive === true &&
-              new Date(userData.subscription?.endDate) > new Date();
-            const limit = getDeviceLimit(pkgType, isActive);
+            // Limit considers BOTH the general and Live TV subscriptions,
+            // using the admin-configured maxDevices per package.
+            const limit = await getUserDeviceLimit(userData);
             let sessions: ActiveSession[] = Array.isArray(userData.active_sessions) ? userData.active_sessions : [];
             sessions = sessions.filter(s => s.deviceId !== deviceId);
             while (sessions.length >= limit) {
@@ -369,13 +364,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
           throw new Error('ACCOUNT_BLOCKED');
         }
 
-        // Claim device session — adds to active_sessions with plan-based limit
+        // Claim device session — adds to active_sessions with plan-based limit.
+        // Limit considers BOTH the general and Live TV subscriptions, using the
+        // admin-configured maxDevices per package.
         const deviceId = getOrCreateDeviceId();
         const deviceLabel = getDeviceLabel();
-        const pkgType = userData.subscription?.packageType;
-        const isActiveSub = userData.subscription?.isActive === true &&
-          new Date(userData.subscription?.endDate) > new Date();
-        const limit = getDeviceLimit(pkgType, isActiveSub);
+        const limit = await getUserDeviceLimit(userData);
         let sessions: ActiveSession[] = Array.isArray(userData.active_sessions) ? userData.active_sessions : [];
         sessions = sessions.filter(s => s.deviceId !== deviceId);
         while (sessions.length >= limit) {

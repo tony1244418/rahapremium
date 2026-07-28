@@ -13,17 +13,39 @@ export interface PackageConfig {
   price: number;
   name: string;
   description?: string;
+  /** Number of devices allowed to be logged in at once on this package. */
+  maxDevices?: number;
 }
+
+/**
+ * Default device limits per package key. Used as a fallback when a package
+ * config does not explicitly set `maxDevices` (e.g. older stored configs).
+ */
+export const DEFAULT_DEVICE_LIMITS: Record<string, number> = {
+  FEDHA: 1, CHUMA: 1, DHAHABU: 1, ALMASI: 2, MALKIA: 4,
+  KITONGA: 1, SWALA: 1, ZEBRA: 1, SIMBA: 1, NDOVU: 1, FARU: 1, TWIGA: 1,
+};
+
+/** Resolve the device limit for a single package from a config map. */
+export const getPackageDeviceLimit = (
+  config: PackagesConfigMap | undefined,
+  packageType?: string | null
+): number => {
+  if (!packageType) return 1;
+  const configured = config?.[packageType as SubscriptionPackage]?.maxDevices;
+  if (typeof configured === 'number' && configured > 0) return configured;
+  return DEFAULT_DEVICE_LIMITS[packageType] ?? 1;
+};
 
 export type PackagesConfigMap = Record<SubscriptionPackage, PackageConfig>;
 
 // Default Subscription packages configuration
 export const SUBSCRIPTION_PACKAGES: PackagesConfigMap = {
-  FEDHA: { days: 3, price: 5000, name: 'FEDHA' },
-  CHUMA: { days: 7, price: 8000, name: 'CHUMA' },
-  DHAHABU: { days: 14, price: 15000, name: 'DHAHABU' },
-  ALMASI: { days: 30, price: 25000, name: 'ALMASI' },
-  MALKIA: { days: 180, price: 120000, name: 'MALKIA' },
+  FEDHA: { days: 3, price: 5000, name: 'FEDHA', maxDevices: 1 },
+  CHUMA: { days: 7, price: 8000, name: 'CHUMA', maxDevices: 1 },
+  DHAHABU: { days: 14, price: 15000, name: 'DHAHABU', maxDevices: 1 },
+  ALMASI: { days: 30, price: 25000, name: 'ALMASI', maxDevices: 2 },
+  MALKIA: { days: 180, price: 120000, name: 'MALKIA', maxDevices: 4 },
   // Game-specific packages
   KITONGA: { days: 0, price: 1000, name: 'KITONGA' },
   SWALA: { days: 0, price: 5000, name: 'SWALA' },
@@ -39,11 +61,11 @@ export const SUBSCRIPTION_PACKAGES: PackagesConfigMap = {
 // names (e.g. "FEDHA LIVE") so users can tell a Live TV package apart from a
 // normal package that shares the same key. Stored/edited independently.
 export const LIVETV_SUBSCRIPTION_PACKAGES: PackagesConfigMap = {
-  FEDHA: { days: 3, price: 5000, name: 'FEDHA LIVE TV' },
-  CHUMA: { days: 7, price: 8000, name: 'CHUMA LIVE TV' },
-  DHAHABU: { days: 14, price: 15000, name: 'DHAHABU LIVE TV' },
-  ALMASI: { days: 30, price: 25000, name: 'ALMASI LIVE TV' },
-  MALKIA: { days: 180, price: 120000, name: 'MALKIA LIVE TV' },
+  FEDHA: { days: 3, price: 5000, name: 'FEDHA LIVE TV', maxDevices: 1 },
+  CHUMA: { days: 7, price: 8000, name: 'CHUMA LIVE TV', maxDevices: 1 },
+  DHAHABU: { days: 14, price: 15000, name: 'DHAHABU LIVE TV', maxDevices: 1 },
+  ALMASI: { days: 30, price: 25000, name: 'ALMASI LIVE TV', maxDevices: 2 },
+  MALKIA: { days: 180, price: 120000, name: 'MALKIA LIVE TV', maxDevices: 4 },
   // Game packages are not part of the Live TV set; kept for type completeness.
   KITONGA: { days: 0, price: 1000, name: 'KITONGA' },
   SWALA: { days: 0, price: 5000, name: 'SWALA' },
@@ -856,4 +878,35 @@ export const checkPaymentStatus = async (orderId: string): Promise<{
   } catch (error) {
     return { success: false, error: 'Payment not found' };
   }
+};
+
+/**
+ * Resolve the maximum number of simultaneous devices allowed for a user,
+ * considering BOTH the general subscription and the Live TV subscription.
+ * The highest limit among the currently-active subscriptions wins.
+ *
+ * Accepts either a raw DB row (`live_tv_subscription`) or a mapped User
+ * object (`liveTvSubscription`).
+ */
+export const getUserDeviceLimit = async (u: any): Promise<number> => {
+  const now = new Date();
+  const [generalConfig, liveTvConfig] = await Promise.all([
+    getPackagesConfig(),
+    getLiveTvPackagesConfig()
+  ]);
+
+  let limit = 1;
+
+  const consider = (sub: any, config: PackagesConfigMap) => {
+    if (!sub) return;
+    const active =
+      sub.isActive === true && !!sub.endDate && new Date(sub.endDate) > now;
+    if (!active) return;
+    limit = Math.max(limit, getPackageDeviceLimit(config, sub.packageType));
+  };
+
+  consider(u?.subscription, generalConfig);
+  consider(u?.live_tv_subscription ?? u?.liveTvSubscription, liveTvConfig);
+
+  return limit;
 };

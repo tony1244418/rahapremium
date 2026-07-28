@@ -167,6 +167,24 @@ export default function AdminPackagesPage() {
           />
         </div>
 
+        {/* Max Devices (subscription & Live TV only) */}
+        {!isGame && (
+          <div>
+            <label className="block text-xs font-semibold text-dark-400 uppercase tracking-wider mb-1">
+              Max Devices
+              <span className="ml-1 text-dark-500 normal-case font-normal">(simultaneous logins)</span>
+            </label>
+            <input
+              type="number"
+              value={pkg?.maxDevices ?? 1}
+              onChange={(e) => handleInputChange(setType, pkgKey, 'maxDevices', e.target.value)}
+              className="form-input w-full text-sm"
+              min="1"
+              step="1"
+            />
+          </div>
+        )}
+
         {/* Description */}
         <div>
           <label className="block text-xs font-semibold text-dark-400 uppercase tracking-wider mb-1">

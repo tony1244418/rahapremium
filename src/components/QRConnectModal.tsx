@@ -41,6 +41,7 @@ export default function QRConnectModal({ isOpen, onClose, initialTab = 'myqr' }:
   const [timeLeft, setTimeLeft] = useState(300);
   const [activeSessions, setActiveSessions] = useState<ActiveSession[]>([]);
   const [removingDevice, setRemovingDevice] = useState<string | null>(null);
+  const [deviceLimit, setDeviceLimit] = useState(1);
 
   // Scan tab state
   const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle');
@@ -319,11 +320,26 @@ export default function QRConnectModal({ isOpen, onClose, initialTab = 'myqr' }:
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
-  const getDeviceLimit = () => {
-    if (!user?.subscription?.isActive) return 1;
-    const limits: Record<string, number> = { FEDHA: 1, CHUMA: 1, DHAHABU: 1, ALMASI: 2, MALKIA: 4 };
-    return limits[user.subscription.packageType] ?? 1;
-  };
+  // Resolve the device limit from the admin-configured package settings,
+  // considering both the general and Live TV subscriptions.
+  useEffect(() => {
+    let cancelled = false;
+    if (!user) {
+      setDeviceLimit(1);
+      return;
+    }
+    import('@/lib/subscriptions')
+      .then(({ getUserDeviceLimit }) => getUserDeviceLimit(user))
+      .then((limit) => {
+        if (!cancelled) setDeviceLimit(limit);
+      })
+      .catch(() => {
+        if (!cancelled) setDeviceLimit(1);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   return (
     <AnimatePresence>
@@ -398,7 +414,7 @@ export default function QRConnectModal({ isOpen, onClose, initialTab = 'myqr' }:
                     <div className="w-full rounded-xl p-3" style={{ background: 'rgba(30,107,239,0.08)', border: '1px solid rgba(30,107,239,0.15)' }}>
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-white/60 text-xs">Active Devices</span>
-                        <span className="text-primary-400 text-xs font-bold">{activeSessions.length}/{getDeviceLimit()}</span>
+                        <span className="text-primary-400 text-xs font-bold">{activeSessions.length}/{deviceLimit}</span>
                       </div>
                       <div className="space-y-1.5">
                         {activeSessions.length === 0 && <p className="text-white/30 text-xs text-center py-1">No active sessions</p>}
