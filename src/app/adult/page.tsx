@@ -20,14 +20,14 @@ import { getControlCenterSettings, ControlCenterSettings } from '@/lib/admin-set
 type AdultSection = 'zilizovuja' | 'ngono' | 'movies-ngono';
 
 export default function AdultContentPage() {
-  const { user, adminUser, refreshUserData } = useAuth();
+  const { user, refreshUserData } = useAuth();
   const { t } = useLanguage();
   const { toggles, loading: togglesLoading } = usePlatformControls();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
 
-  // Block access when an admin has turned the +18 section off (admins are exempt).
-  const adultSectionDisabled = !togglesLoading && !toggles.adultSectionEnabled && !adminUser;
+  // Block access for everyone when an admin has turned the +18 section off.
+  const adultSectionDisabled = !togglesLoading && !toggles.adultSectionEnabled;
 
   useEffect(() => {
     if (adultSectionDisabled) {

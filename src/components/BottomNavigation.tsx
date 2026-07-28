@@ -28,9 +28,10 @@ export default function BottomNavigation() {
   }, [isFollowModalOpen]);
 
   // Show the +18 icon only when the section is enabled by an admin.
-  // Admins can always see it so they can review/manage it even when hidden.
+  // When turned off it is hidden for everyone (admins manage adult content
+  // from the admin panel, not the public +18 tab).
   const adultSectionEnabled = togglesLoading ? true : toggles.adultSectionEnabled;
-  const shouldShowAdultIcon = !authLoading && isClient && (adultSectionEnabled || !!adminUser);
+  const shouldShowAdultIcon = !authLoading && isClient && adultSectionEnabled;
 
   const navItems = [
     { icon: Compass, label: t('home'), href: '/' },
