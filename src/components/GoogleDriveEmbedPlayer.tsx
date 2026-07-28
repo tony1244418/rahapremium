@@ -64,6 +64,16 @@ export const GoogleDriveEmbedPlayer: React.FC<GoogleDriveEmbedPlayerProps> = ({
     return videoUrl;
   };
 
+  // Direct video files (mp4/webm/etc.) must play in a native <video> element —
+  // they do NOT play inside an <iframe> (the browser blocks framing or shows
+  // nothing), which is why such URLs only played when opened directly in a tab.
+  // Embed URLs (YouTube/Vimeo/Google Drive preview/HTML players) still use the iframe.
+  const isDirectVideoFile = (url: string): boolean => {
+    if (!url) return false;
+    const clean = url.split('?')[0].split('#')[0].toLowerCase();
+    return /\.(mp4|m4v|webm|ogg|ogv|mov|mkv)$/.test(clean);
+  };
+
   useEffect(() => {
     if (isOpen) {
       setIsLoading(true);
@@ -386,26 +396,45 @@ export const GoogleDriveEmbedPlayer: React.FC<GoogleDriveEmbedPlayerProps> = ({
             </div>
           )}
 
-          {/* Video Iframe - Optimized for mobile */}
+          {/* Player area: native <video> for direct files, <iframe> for embeds */}
           {!error && (
             <div className="relative w-full h-full">
-              <iframe
-                src={getEmbedUrl()}
-                className="w-full h-full"
-                frameBorder="0"
-                allowFullScreen
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                onLoad={handleIframeLoad}
-                onError={handleIframeError}
-                title={movie.title}
-                style={{
-                  // Mobile optimizations
-                  touchAction: 'manipulation',
-                  WebkitTouchCallout: 'none',
-                  WebkitUserSelect: 'none',
-                  userSelect: 'none'
-                }}
-              />
+              {isDirectVideoFile(videoUrl) ? (
+                <video
+                  src={getEmbedUrl()}
+                  className="w-full h-full bg-black"
+                  controls
+                  autoPlay
+                  playsInline
+                  controlsList="nodownload"
+                  onLoadedData={handleIframeLoad}
+                  onError={handleIframeError}
+                  style={{
+                    touchAction: 'manipulation',
+                    WebkitTouchCallout: 'none',
+                  }}
+                >
+                  Your browser does not support the video tag.
+                </video>
+              ) : (
+                <iframe
+                  src={getEmbedUrl()}
+                  className="w-full h-full"
+                  frameBorder="0"
+                  allowFullScreen
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  onLoad={handleIframeLoad}
+                  onError={handleIframeError}
+                  title={movie.title}
+                  style={{
+                    // Mobile optimizations
+                    touchAction: 'manipulation',
+                    WebkitTouchCallout: 'none',
+                    WebkitUserSelect: 'none',
+                    userSelect: 'none'
+                  }}
+                />
+              )}
             </div>
           )}
 

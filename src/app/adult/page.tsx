@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { usePlatformControls } from '@/contexts/PlatformControlContext';
 import {
   Play, Lock, Star, Eye, Search, TrendingUp, Video, X, Film,
   MessageCircle, Instagram, Twitter, Facebook, Youtube, Send,
@@ -19,10 +20,20 @@ import { getControlCenterSettings, ControlCenterSettings } from '@/lib/admin-set
 type AdultSection = 'zilizovuja' | 'ngono' | 'movies-ngono';
 
 export default function AdultContentPage() {
-  const { user, refreshUserData } = useAuth();
+  const { user, adminUser, refreshUserData } = useAuth();
   const { t } = useLanguage();
+  const { toggles, loading: togglesLoading } = usePlatformControls();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+
+  // Block access when an admin has turned the +18 section off (admins are exempt).
+  const adultSectionDisabled = !togglesLoading && !toggles.adultSectionEnabled && !adminUser;
+
+  useEffect(() => {
+    if (adultSectionDisabled) {
+      router.replace('/');
+    }
+  }, [adultSectionDisabled, router]);
   const [movies, setMovies] = useState<Movie[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [genreFilter, setGenreFilter] = useState('all');
@@ -110,6 +121,16 @@ export default function AdultContentPage() {
     }
     router.push(`/adult/watch/${item.id}`);
   };
+
+  if (adultSectionDisabled) {
+    return (
+      <MainLayout>
+        <div className="container-mobile flex items-center justify-center min-h-96">
+          <Loading size="lg" text="Redirecting..." variant="bar" />
+        </div>
+      </MainLayout>
+    );
+  }
 
   if (loading) {
     return (

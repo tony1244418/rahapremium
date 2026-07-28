@@ -144,7 +144,8 @@ export type AdminToggleKey =
   | 'feedbackIconVisible'
   | 'liveTvSliderEnabled'
   | 'liveTvAllFree'
-  | 'liveTvFreeTrialForAll';
+  | 'liveTvFreeTrialForAll'
+  | 'adultSectionEnabled';
 
 export type AdminToggleSettings = Record<AdminToggleKey, boolean>;
 
@@ -169,7 +170,9 @@ export const DEFAULT_ADMIN_TOGGLE_SETTINGS: AdminToggleSettings = {
   liveTvSliderEnabled: false,
   // Live TV global access switches — OFF by default (no behaviour change).
   liveTvAllFree: false,
-  liveTvFreeTrialForAll: false
+  liveTvFreeTrialForAll: false,
+  // +18 (adult) section — ON by default (no behaviour change).
+  adultSectionEnabled: true
 };
 
 export const getAdminToggleSettings = async (): Promise<AdminToggleSettingsWithMetadata> => {
@@ -248,6 +251,11 @@ export const isManualPaymentsEnabled = async (): Promise<boolean> => {
 export const isFeedbackEnabled = async (): Promise<boolean> => {
   const settings = await getAdminToggleSettings();
   return settings.values.feedbackEnabled;
+};
+
+export const isAdultSectionEnabled = async (): Promise<boolean> => {
+  const settings = await getAdminToggleSettings();
+  return settings.values.adultSectionEnabled;
 };
 
 export const isFeedbackIconVisible = async (): Promise<boolean> => {

@@ -398,6 +398,12 @@ export default function AdminSettingsPage() {
         label: 'Free Trial for Everyone',
         description: 'Give every viewer the Live TV free trial, ignoring the 24-hour cooldown',
         icon: Sparkles
+      },
+      {
+        key: 'adultSectionEnabled',
+        label: '+18 Adult Section',
+        description: 'Show or hide the +18 section and block access when turned off',
+        icon: AlertCircle
       }
     ],
     []
