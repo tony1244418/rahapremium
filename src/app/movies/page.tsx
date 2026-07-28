@@ -71,7 +71,7 @@ export default function MoviesPage() {
 
   if (loading) {
     return (
-      <ProtectedRoute>
+      <ProtectedRoute allowAnonymousWhenFree>
         <MainLayout>
           <div className="container-mobile flex items-center justify-center min-h-96">
             <div className="text-center">
@@ -87,7 +87,7 @@ export default function MoviesPage() {
   }
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute allowAnonymousWhenFree>
       <MainLayout>
         <div className="container-mobile space-y-8">
           {/* Header */}

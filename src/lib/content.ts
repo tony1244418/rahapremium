@@ -853,6 +853,14 @@ export const searchContent = async (query: string, type: 'movies' | 'series' | '
 };
 
 export const checkContentAccess = (user: User | null, content: any): boolean => {
+  // Admin override — when "All Content Free" is ON, everything is unlocked.
+  try {
+    const { isAllContentFree } = require('./subscriptions');
+    if (typeof isAllContentFree === 'function' && isAllContentFree()) return true;
+  } catch {
+    /* ignore */
+  }
+
   // Support being called with either an array of requiredPackages OR a full content object
   const requiredPackages: string[] = Array.isArray(content)
     ? content

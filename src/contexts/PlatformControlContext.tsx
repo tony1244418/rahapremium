@@ -8,6 +8,7 @@ import {
   DEFAULT_ADMIN_TOGGLE_SETTINGS,
   getAdminToggleSettings
 } from '@/lib/admin-settings';
+import { setAllContentFree } from '@/lib/subscriptions';
 
 type PlatformControlContextValue = {
   toggles: AdminToggleSettings;
@@ -88,6 +89,12 @@ export function PlatformControlProvider({ children }: PlatformControlProviderPro
       supabase.removeChannel(channel);
     };
   }, []);
+
+  // Keep the module-level "all content free" override in sync so that the pure
+  // access-check helpers in '@/lib/subscriptions' honor the admin toggle.
+  useEffect(() => {
+    setAllContentFree(!!toggles.allContentFree);
+  }, [toggles.allContentFree]);
 
   const contextValue = useMemo<PlatformControlContextValue>(
     () => ({

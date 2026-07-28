@@ -404,6 +404,12 @@ export default function AdminSettingsPage() {
         label: '+18 Adult Section',
         description: 'Show or hide the +18 section and block access when turned off',
         icon: AlertCircle
+      },
+      {
+        key: 'allContentFree',
+        label: 'All Content Free',
+        description: 'Unlock all movies & series for everyone (no subscription or purchase needed)',
+        icon: Zap
       }
     ],
     []

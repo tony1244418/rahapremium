@@ -16,7 +16,7 @@ export default async function MovieDetailPageWrapper({ params }: MovieDetailPage
 
     if (!movieId) {
       return (
-        <ProtectedRoute>
+        <ProtectedRoute allowAnonymousWhenFree>
           <MainLayout>
             <div className="container-mobile flex items-center justify-center min-h-96">
               <div className="text-center">
@@ -34,7 +34,7 @@ export default async function MovieDetailPageWrapper({ params }: MovieDetailPage
     }
 
     return (
-      <ProtectedRoute>
+      <ProtectedRoute allowAnonymousWhenFree>
         <MainLayout>
           <MovieDetailPage movieId={movieId} />
         </MainLayout>
@@ -43,7 +43,7 @@ export default async function MovieDetailPageWrapper({ params }: MovieDetailPage
   } catch (error) {
     console.error('Error in MovieDetailPageWrapper:', error);
     return (
-      <ProtectedRoute>
+      <ProtectedRoute allowAnonymousWhenFree>
         <MainLayout>
           <div className="container-mobile flex items-center justify-center min-h-96">
             <div className="text-center">

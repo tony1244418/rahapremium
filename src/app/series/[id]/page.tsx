@@ -135,7 +135,7 @@ export default function SeriesDetailPage({ params }: { params: Promise<{ id: str
     const videoUrl = season.videoUrl || season.googleDriveUrl;
     if (videoUrl) {
       const alreadyPurchased = autoPlay || (series ? (hasPurchasedContent(user, series.id) || freshContentAccesses.includes(series.id)) : false);
-      const free = !series?.requiredPackages?.length && !series?.contentPurchaseEnabled;
+      const free = isContentFree(series as any) || (!series?.requiredPackages?.length && !series?.contentPurchaseEnabled);
 
       // If already purchased or free, play directly
       if (!alreadyPurchased && !free) {
@@ -195,7 +195,7 @@ export default function SeriesDetailPage({ params }: { params: Promise<{ id: str
 
   if (loading || refreshing) {
     return (
-      <ProtectedRoute>
+      <ProtectedRoute allowAnonymousWhenFree>
         <MainLayout>
           <div className="container-mobile flex items-center justify-center min-h-96">
             <div className="text-center">
@@ -212,7 +212,7 @@ export default function SeriesDetailPage({ params }: { params: Promise<{ id: str
 
   if (error || !series) {
     return (
-      <ProtectedRoute>
+      <ProtectedRoute allowAnonymousWhenFree>
         <MainLayout>
           <div className="container-mobile text-center py-12">
             <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -235,7 +235,7 @@ export default function SeriesDetailPage({ params }: { params: Promise<{ id: str
   }
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute allowAnonymousWhenFree>
       <MainLayout>
         <div className="container-mobile space-y-8">
           {/* Back Button */}

@@ -145,7 +145,8 @@ export type AdminToggleKey =
   | 'liveTvSliderEnabled'
   | 'liveTvAllFree'
   | 'liveTvFreeTrialForAll'
-  | 'adultSectionEnabled';
+  | 'adultSectionEnabled'
+  | 'allContentFree';
 
 export type AdminToggleSettings = Record<AdminToggleKey, boolean>;
 
@@ -172,7 +173,9 @@ export const DEFAULT_ADMIN_TOGGLE_SETTINGS: AdminToggleSettings = {
   liveTvAllFree: false,
   liveTvFreeTrialForAll: false,
   // +18 (adult) section — ON by default (no behaviour change).
-  adultSectionEnabled: true
+  adultSectionEnabled: true,
+  // Make all standard (movie/series) content free — OFF by default.
+  allContentFree: false
 };
 
 export const getAdminToggleSettings = async (): Promise<AdminToggleSettingsWithMetadata> => {

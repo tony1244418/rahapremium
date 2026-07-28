@@ -308,10 +308,24 @@ export const checkSubscriptionExpiry = async (user: User): Promise<boolean> => {
   return true;
 };
 
+// Global override: when enabled by an admin ("All Content Free" switch), every
+// standard (movie/series) item is unlocked for everyone. Kept in sync by
+// PlatformControlContext via setAllContentFree().
+let allContentFreeOverride = false;
+export const setAllContentFree = (value: boolean): void => {
+  allContentFreeOverride = value;
+};
+export const isAllContentFree = (): boolean => allContentFreeOverride;
+
 export const hasAccessToContent = (
   user: User | null,
   requiredPackages: SubscriptionPackage[]
 ): boolean => {
+  // Admin override — everything is free.
+  if (allContentFreeOverride) {
+    return true;
+  }
+
   // If no packages are required, content is freely accessible — no login needed
   if (!requiredPackages || requiredPackages.length === 0) {
     return true;
@@ -384,6 +398,8 @@ export const isContentEffectivelyFree = (content: {
   contentPurchasePackages?: SubscriptionPackage[];
   requiredPackages?: SubscriptionPackage[];
 }): boolean => {
+  // Admin override — everything is free.
+  if (allContentFreeOverride) return true;
   // No required packages at all → free
   if (!content.requiredPackages || content.requiredPackages.length === 0) {
     if (!content.contentPurchaseEnabled) return true;
