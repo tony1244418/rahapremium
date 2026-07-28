@@ -29,7 +29,9 @@ import {
   CloudLightning,
   Gamepad2,
   DollarSign,
-  ArrowUpCircle
+  ArrowUpCircle,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -46,6 +48,7 @@ import {
   deleteMovie,
   deleteSeries,
   postMovieNow,
+  saveMovieSortOrders,
   formatDuration,
   getContentTypeIcon,
   getContentTypeColor
@@ -450,6 +453,40 @@ export default function AdminContentPage() {
     } else if (activeTab === 'series') {
       const res = await getSeries();
       if (res.success && res.data) setSeries(res.data);
+    }
+  };
+
+  // Move a movie up/down in the display order and persist an explicit
+  // 1..N sortOrder for the whole list. Lower sortOrder = shown first.
+  const handleMoveMovie = async (item: ContentItem, direction: 'up' | 'down') => {
+    if (activeTab !== 'movies') return;
+    const list = [...movies];
+    const idx = list.findIndex((m) => m.id === item.id);
+    if (idx === -1) return;
+    const target = direction === 'up' ? idx - 1 : idx + 1;
+    if (target < 0 || target >= list.length) return;
+
+    [list[idx], list[target]] = [list[target], list[idx]];
+    setMovies(list); // optimistic UI update
+    setActionLoading(`move-${item.id}`);
+    setError(null);
+
+    try {
+      const orders: Record<string, number> = {};
+      list.forEach((m, i) => {
+        orders[m.id] = i + 1;
+      });
+      const ok = await saveMovieSortOrders(orders);
+      if (!ok) {
+        setError('Failed to save new order');
+        await refreshCurrentTab(); // revert to server truth
+      }
+    } catch (err) {
+      console.error('Error reordering movie:', err);
+      setError('Failed to save new order');
+      await refreshCurrentTab();
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -924,6 +961,34 @@ export default function AdminContentPage() {
                               <Tv size={16} />
                             </button>
                           )}
+                          {contentType === 'movie' && (() => {
+                            const movieIdx = movies.findIndex((m) => m.id === item.id);
+                            const isMoving = actionLoading === `move-${item.id}`;
+                            // Arranging only makes sense on the full, unfiltered list.
+                            const arrangeLocked = searchQuery.trim() !== '' || filterStatus !== 'all';
+                            const upTitle = arrangeLocked ? 'Clear search & status filter to arrange' : 'Move Up';
+                            const downTitle = arrangeLocked ? 'Clear search & status filter to arrange' : 'Move Down';
+                            return (
+                              <>
+                                <button
+                                  onClick={() => handleMoveMovie(item, 'up')}
+                                  disabled={isMoving || arrangeLocked || movieIdx <= 0}
+                                  className="text-dark-400 hover:text-blue-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                  title={upTitle}
+                                >
+                                  {isMoving ? <RefreshCw size={16} className="animate-spin" /> : <ChevronUp size={16} />}
+                                </button>
+                                <button
+                                  onClick={() => handleMoveMovie(item, 'down')}
+                                  disabled={isMoving || arrangeLocked || movieIdx === -1 || movieIdx >= movies.length - 1}
+                                  className="text-dark-400 hover:text-blue-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                  title={downTitle}
+                                >
+                                  <ChevronDown size={16} />
+                                </button>
+                              </>
+                            );
+                          })()}
                           {contentType === 'movie' && (
                             <button 
                               onClick={() => handlePostNow(item)}

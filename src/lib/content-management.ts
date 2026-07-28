@@ -178,6 +178,27 @@ export const saveMovieSortOrder = async (id: string, sortOrder: number): Promise
   }
 };
 
+/**
+ * Persist an explicit display order for many movies at once. `orders` maps a
+ * movie id to its sortOrder (lower = shown first). Merges with any existing
+ * saved orders. Used by the admin "arrange" controls.
+ */
+export const saveMovieSortOrders = async (orders: Record<string, number>): Promise<boolean> => {
+  try {
+    const existing = await getMovieSortOrders();
+    const merged = { ...existing, ...orders };
+    const { error } = await supabase
+      .from('admin_settings')
+      .upsert(
+        { id: MOVIE_ORDER_KEY, data: { orders: merged }, updated_at: new Date().toISOString() },
+        { onConflict: 'id' }
+      );
+    return !error;
+  } catch {
+    return false;
+  }
+};
+
 /** Sort movies by sortOrder ASC, then by createdAt DESC (new movies appear first in their group). */
 const applyMovieOrder = (movies: Movie[], orders: Record<string, number>): Movie[] => {
   return movies.map(m => ({ ...m, sortOrder: orders[m.id] || 0 })).sort((a, b) => {
