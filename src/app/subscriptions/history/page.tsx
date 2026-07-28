@@ -88,11 +88,11 @@ export default function PaymentHistoryPage() {
 RAHAPREMIUM RECEIPT
 ==================
 Transaction ID: ${receiptData.transactionId}
-Package: ${receiptData.packageType}
-Amount: TSH ${receiptData.amount.toLocaleString()}
-Phone: ${receiptData.phoneNumber}
-Status: ${receiptData.status.toUpperCase()}
-Date: ${new Date(receiptData.date).toLocaleString()}
+Package: ${receiptData.packageType ?? 'N/A'}
+Amount: TSH ${(receiptData.amount ?? 0).toLocaleString()}
+Phone: ${receiptData.phoneNumber ?? 'N/A'}
+Status: ${(receiptData.status ?? 'unknown').toUpperCase()}
+Date: ${receiptData.date ? new Date(receiptData.date).toLocaleString() : 'N/A'}
 ${receiptData.completedDate ? `Completed: ${new Date(receiptData.completedDate).toLocaleString()}` : ''}
 
 Thank you for using RahaPremium!
@@ -211,7 +211,7 @@ Thank you for using RahaPremium!
                       </div>
                       <div className="text-right">
                         <p className="text-xl font-bold text-primary-400">
-                          TSH {payment.amount.toLocaleString()}
+                          TSH {(payment.amount ?? 0).toLocaleString()}
                         </p>
                         <p className={`text-sm font-medium capitalize ${getStatusColor(payment.status)}`}>
                           {payment.status}
@@ -307,7 +307,7 @@ Thank you for using RahaPremium!
                       </div>
                       <div className="text-right">
                         <p className="text-xl font-bold text-primary-400">
-                          TSH {subscription.amount.toLocaleString()}
+                          TSH {(subscription.amount ?? 0).toLocaleString()}
                         </p>
                         <p className={`text-sm font-medium ${
                           subscription.isActive ? 'text-green-400' : 'text-gray-400'
