@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { usePlatformControls } from '@/contexts/PlatformControlContext';
 import {
   Play, Lock, Star, Eye, Search, TrendingUp, Video, X, Film,
   MessageCircle, Instagram, Twitter, Facebook, Youtube, Send,
@@ -13,7 +12,7 @@ import { subscribeToAdultMovies } from '@/lib/content-management';
 import { Movie } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loading } from '@/components/ui/Loading';
-import { hasAccessToContent, hasPurchasedContent, isContentFree } from '@/lib/subscriptions';
+import { hasPurchasedContent } from '@/lib/subscriptions';
 import { useRouter } from 'next/navigation';
 import { getControlCenterSettings, ControlCenterSettings } from '@/lib/admin-settings';
 
@@ -22,18 +21,8 @@ type AdultSection = 'zilizovuja' | 'ngono' | 'movies-ngono';
 export default function AdultContentPage() {
   const { user, refreshUserData } = useAuth();
   const { t } = useLanguage();
-  const { toggles, loading: togglesLoading } = usePlatformControls();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-
-  // Block access for everyone when an admin has turned the +18 section off.
-  const adultSectionDisabled = !togglesLoading && !toggles.adultSectionEnabled;
-
-  useEffect(() => {
-    if (adultSectionDisabled) {
-      router.replace('/');
-    }
-  }, [adultSectionDisabled, router]);
   const [movies, setMovies] = useState<Movie[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [genreFilter, setGenreFilter] = useState('all');
@@ -97,40 +86,20 @@ export default function AdultContentPage() {
 
   const handleContentClick = (item: Movie) => {
     const alreadyPurchased = hasPurchasedContent(user, item.id);
-    const free = isContentFree(item);
 
     if (!user) {
-      const targetUrl = item.contentPurchaseEnabled && !free && !alreadyPurchased
-        ? `/pay?contentId=${item.id}&type=adult`
-        : `/adult/watch/${item.id}`;
-      router.push(`/auth?redirect=${encodeURIComponent(targetUrl)}`);
+      // Not logged in — send to auth, then to pay page
+      router.push(`/auth?redirect=${encodeURIComponent(`/pay?contentId=${item.id}&type=adult`)}`);
       return;
     }
-    // If already purchased or free, open directly
-    if (free || alreadyPurchased) {
+    // Already purchased → watch directly
+    if (alreadyPurchased) {
       router.push(`/adult/watch/${item.id}`);
       return;
     }
-    if (item.contentPurchaseEnabled) {
-      router.push(`/pay?contentId=${item.id}&type=adult`);
-      return;
-    }
-    if (!hasAccessToContent(user, item.requiredPackages || [])) {
-      router.push(`/subscriptions?redirect=${encodeURIComponent(`/adult/watch/${item.id}`)}`);
-      return;
-    }
-    router.push(`/adult/watch/${item.id}`);
+    // Not purchased → always go to pay page (per-content purchase model)
+    router.push(`/pay?contentId=${item.id}&type=adult`);
   };
-
-  if (adultSectionDisabled) {
-    return (
-      <MainLayout>
-        <div className="container-mobile flex items-center justify-center min-h-96">
-          <Loading size="lg" text="Redirecting..." variant="bar" />
-        </div>
-      </MainLayout>
-    );
-  }
 
   if (loading) {
     return (
@@ -285,9 +254,9 @@ export default function AdultContentPage() {
             >
               {currentContent.map((item, index) => {
                 const hasPurchased = hasPurchasedContent(user, item.id);
-                const free = isContentFree(item);
-                const isPerContentPurchase = !!(item.contentPurchaseEnabled) && !hasPurchased && !free;
-                const hasAccess = free || hasPurchased || hasAccessToContent(user, item.requiredPackages || []);
+                // Adult content: always locked unless purchased
+                const hasAccess = hasPurchased;
+                const locked = !hasAccess;
                 const title = item.title || 'Untitled';
 
                 return (
@@ -306,7 +275,6 @@ export default function AdultContentPage() {
                           src={item.thumbnailUrl}
                           alt={title}
                           className="w-full h-full object-cover"
-                          style={!hasAccess && !isPerContentPurchase ? { filter: 'blur(6px) brightness(0.5)' } : {}}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-800/40 to-slate-900">
@@ -314,48 +282,43 @@ export default function AdultContentPage() {
                         </div>
                       )}
 
-                      {/* Hover overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      {/* Always-on dark gradient from bottom for readability */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
                       {/* 18+ badge */}
                       <div className="absolute top-2 left-2 bg-blue-700/90 backdrop-blur-sm text-white text-xs px-1.5 py-0.5 rounded font-black shadow-md">
                         18+
                       </div>
 
-                      {/* Lock overlay */}
-                      {!hasAccess && !isPerContentPurchase && (
-                        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2">
-                          <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center border border-white/20">
-                            <Lock size={18} className="text-white" />
+                      {/* Lock badge at bottom — visible over the image */}
+                      {locked && (
+                        <div className="absolute bottom-0 left-0 right-0 px-3 py-3 flex flex-col items-center gap-1">
+                          <div className="w-8 h-8 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30 shadow-lg">
+                            <Lock size={14} className="text-white" />
                           </div>
-                          <span className="text-xs text-white/80 font-semibold">Subscribe</span>
+                          {item.contentPrice && item.contentPrice > 0 && (
+                            <span className="text-xs text-amber-400 font-black drop-shadow-lg">
+                              TZS {item.contentPrice.toLocaleString()}
+                            </span>
+                          )}
                         </div>
                       )}
 
-                      {/* Buy badge */}
-                      {isPerContentPurchase && (
-                        <div className="absolute bottom-2 left-2 right-2">
-                          <div className="bg-blue-600/95 text-white text-xs px-2 py-1 rounded-lg font-bold text-center shadow-lg">
-                            TZS {(item.contentPrice || 0).toLocaleString()}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Duration */}
-                      {!isPerContentPurchase && (
-                        <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-white text-xs px-1.5 py-0.5 rounded">
-                          {(item.duration ?? 0) > 0 ? `${Math.floor((item.duration ?? 0) / 60)}h ${(item.duration ?? 0) % 60}m` : 'Video'}
-                        </div>
-                      )}
-
-                      {/* Play button on hover */}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                        {(hasAccess || isPerContentPurchase) && (
+                      {/* Play button on hover — only for purchased content */}
+                      {hasAccess && (
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
                           <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center shadow-xl shadow-blue-600/50 ring-2 ring-white/15 transform scale-75 group-hover:scale-100 transition-transform duration-300">
                             <Play size={20} className="text-white fill-white ml-0.5" />
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
+
+                      {/* Duration badge — only for purchased */}
+                      {hasAccess && (item.duration ?? 0) > 0 && (
+                        <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-white text-xs px-1.5 py-0.5 rounded">
+                          {Math.floor((item.duration ?? 0) / 60)}h {(item.duration ?? 0) % 60}m
+                        </div>
+                      )}
                     </div>
 
                     {/* Info */}
@@ -377,8 +340,8 @@ export default function AdultContentPage() {
                           </>
                         )}
                       </div>
-                      {!hasAccess && !isPerContentPurchase && (
-                        <p className="mt-1 text-xs text-blue-400 font-semibold">Subscription Required</p>
+                      {locked && (
+                        <p className="mt-1 text-xs text-amber-400 font-semibold">Bonyeza Kulipa</p>
                       )}
                     </div>
                   </motion.div>

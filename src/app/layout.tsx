@@ -6,6 +6,7 @@ import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { PlatformControlProvider } from '@/contexts/PlatformControlContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { AdultSiteProvider } from '@/contexts/AdultSiteContext';
 import PWAInstaller from '@/components/PWAInstaller';
 import { AuthLoading } from '@/components/AuthLoading';
 import MaintenanceGate from '@/components/MaintenanceGate';

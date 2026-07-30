@@ -4,6 +4,17 @@ import type { NextRequest } from 'next/server';
 const CANONICAL_HOST = 'www.rahapremium.com';
 const APEX_HOST = 'rahapremium.com';
 
+// The adult-site domain. Falls back to an env var so it can be overridden per
+// deployment without a code change.
+const ADULT_DOMAIN = process.env.NEXT_PUBLIC_ADULT_DOMAIN || 'adult.rahapremium.site';
+
+/** True when a hostname belongs to the adult site. */
+function isAdultDomain(host: string): boolean {
+  const bare = host.split(':')[0].toLowerCase();
+  const adultBare = ADULT_DOMAIN.split(':')[0].toLowerCase();
+  return bare === adultBare || bare === `www.${adultBare}`;
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = request.headers.get('host') || '';
@@ -20,37 +31,44 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url, 308);
   }
 
+  const response = NextResponse.next();
+
+  // Tag requests arriving on the adult domain so the app can render the
+  // adult-only experience. This header is readable server-side and we also
+  // expose it as a client-readable custom request header.
+  if (isAdultDomain(host)) {
+    response.headers.set('x-is-adult-site', '1');
+  }
+
   // Allow PWA files without authentication (static files are served before middleware)
   // This check is here for safety but static files bypass middleware
   if (pathname === '/manifest.json' || pathname === '/sw.js') {
-    return NextResponse.next();
+    return response;
   }
 
   // Allow setup page without authentication
   if (pathname === '/setup') {
-    return NextResponse.next();
+    return response;
   }
 
   // Allow auth page without authentication
   if (pathname === '/auth') {
-    return NextResponse.next();
+    return response;
   }
 
   // Allow home page without authentication (but content will be restricted)
   if (pathname === '/') {
-    return NextResponse.next();
+    return response;
   }
 
   // Protected admin routes
   if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
-    // In a real app, you would check for admin authentication here
-    // For now, we'll rely on the ProtectedRoute component
-    return NextResponse.next();
+    return response;
   }
 
   // Allow admin login page
   if (pathname === '/admin/login') {
-    return NextResponse.next();
+    return response;
   }
 
   // Protected user routes - require authentication
@@ -63,12 +81,10 @@ export function middleware(request: NextRequest) {
   ];
 
   if (protectedUserRoutes.some(route => pathname.startsWith(route))) {
-    // In a real app, you would check for user authentication here
-    // For now, we'll rely on the ProtectedRoute component
-    return NextResponse.next();
+    return response;
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
