@@ -15,13 +15,12 @@ export const dynamic = 'force-dynamic';
 //   • Always respond with Cache-Control: no-store.
 // ────────────────────────────────────────────────────────────────────────────
 
-const TOKEN_SERVICE_URL = process.env.TOKEN_SERVICE_URL || 'https://aztv-token-service.onrender.com';
+const TOKEN_SERVICE_URL = process.env.TOKEN_SERVICE_URL || '';
 const TOKEN_SERVICE_API_KEY = process.env.TOKEN_SERVICE_API_KEY || '';
-const DEFAULT_CDN_HOST = process.env.CDN_HOST || 'https://cdnedgch2.azamtvltd.co.tz';
+const DEFAULT_CDN_HOST = process.env.CDN_HOST || '';
 
 // Legacy fallback: a manually-set token kept in admin_settings. Only used if the
 // token service is unreachable, so existing channels don't go fully dark.
-const FALLBACK_TOKEN = '9mtbtkZuZYH3TvzrMcC4Mgu6CpuN0ogV';
 
 // In-memory cache — capped at 15 seconds (the hard rule). Survives only within
 // a single server instance and never longer than the cap.
@@ -110,6 +109,6 @@ export async function GET(_req: NextRequest) {
     return noStore({ token: dbToken, exp: 0, cdnHost: DEFAULT_CDN_HOST, source: 'db-fallback' });
   }
 
-  // 4. Last-resort hardcoded fallback.
-  return noStore({ token: FALLBACK_TOKEN, exp: 0, cdnHost: DEFAULT_CDN_HOST, source: 'hardcoded-fallback' });
+  // 4. Last-resort: no token available.
+  return noStore({ token: null, exp: 0, cdnHost: DEFAULT_CDN_HOST, source: 'unavailable' }, 503);
 }

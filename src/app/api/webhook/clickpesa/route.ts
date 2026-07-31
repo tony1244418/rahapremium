@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { User, PaymentStatus } from '@/types';
+import { SUBSCRIPTION_PACKAGES, LIVETV_SUBSCRIPTION_PACKAGES } from '@/lib/subscriptions';
 
 /**
  * ClickPesa Webhook Handler
@@ -178,13 +179,9 @@ export async function POST(request: NextRequest) {
           .eq('id', settingsId)
           .single();
 
-        let packagesConfig: any = {
-          FEDHA:   { days: 3,   price: 5000,   name: 'FEDHA' },
-          CHUMA:   { days: 7,   price: 8000,   name: 'CHUMA' },
-          DHAHABU: { days: 14,  price: 15000,  name: 'DHAHABU' },
-          ALMASI:  { days: 30,  price: 25000,  name: 'ALMASI' },
-          MALKIA:  { days: 180, price: 120000, name: 'MALKIA' },
-        };
+        let packagesConfig: any = isLiveTv
+          ? { ...LIVETV_SUBSCRIPTION_PACKAGES }
+          : { ...SUBSCRIPTION_PACKAGES };
         if (!packagesConfigRes.error && packagesConfigRes.data?.data) {
           const raw = packagesConfigRes.data.data;
           const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;

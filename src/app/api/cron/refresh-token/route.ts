@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
-const TOKEN_SOURCE_URL = 'https://v0-token-refresh-dashboard.vercel.app/api/token';
+const TOKEN_SOURCE_URL = process.env.TOKEN_SOURCE_URL || '';
 
 export async function GET(request: Request) {
   // Protect the cron route from unauthorized access
@@ -13,6 +13,13 @@ export async function GET(request: Request) {
     authHeader !== `Bearer ${process.env.CRON_SECRET}`
   ) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (!TOKEN_SOURCE_URL) {
+    return NextResponse.json(
+      { success: false, error: 'TOKEN_SOURCE_URL is not configured' },
+      { status: 500 }
+    );
   }
 
   let token: string | null = null;

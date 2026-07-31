@@ -7,19 +7,19 @@ import axios from 'axios';
 import { createHmac, randomUUID } from 'crypto';
 
 // ─── ClickPesa Config ────────────────────────────────────────────────────────
-const CLICKPESA_API_BASE  = 'https://api.clickpesa.com/third-parties';
-const CLICKPESA_CLIENT_ID = process.env.CLICKPESA_CLIENT_ID || 'IDDZKYbOWmFE0PNcMamsM8ZuxKGveNEG';
-const CLICKPESA_API_KEY   = process.env.CLICKPESA_API_KEY   || 'SKJ9YXhwQHx2NJaquQCQVHJo52ajFxiVPFzLXAZtlg';
+const CLICKPESA_API_BASE  = process.env.CLICKPESA_API_BASE || 'https://api.clickpesa.com/third-parties';
+const CLICKPESA_CLIENT_ID = process.env.CLICKPESA_CLIENT_ID || '';
+const CLICKPESA_API_KEY   = process.env.CLICKPESA_API_KEY   || '';
 
 // The registered origin for this ClickPesa application
-const CLICKPESA_ORIGIN = 'https://eastsay.net';
+const CLICKPESA_ORIGIN = process.env.CLICKPESA_ORIGIN || '';
 
 // Webhook URL ClickPesa calls when payment status changes
 const CLICKPESA_CALLBACK_URL =
   process.env.CLICKPESA_CALLBACK_URL ||
   (process.env.NEXT_PUBLIC_SITE_URL
     ? `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhook/clickpesa`
-    : 'https://www.rahapremium.com/api/webhook/clickpesa');
+    : '');
 
 // ─── Pressso Pay Config ────────────────────────────────────────────────────────
 // Base URL and credentials come from server-side env vars. The SECRET must

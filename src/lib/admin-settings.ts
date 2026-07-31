@@ -18,8 +18,8 @@ export interface ControlCenterSettings {
 }
 
 export const DEFAULT_CONTROL_CENTER_SETTINGS: ControlCenterSettings = {
-  supportEmail: 'support@rahapremium.com',
-  supportWhatsapp: '+255 700 000 000',
+  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || '',
+  supportWhatsapp: process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP || '',
   officeHours: '08:00 - 22:00 EAT',
   maintenanceHeadline: 'We’ll be right back!',
   maintenanceMessage:

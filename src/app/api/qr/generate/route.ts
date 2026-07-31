@@ -55,7 +55,11 @@ export async function POST(request: NextRequest) {
     // Build the deep link URL
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
                     request.headers.get('origin') || 
-                    'https://rahaplus.vercel.app';
+                    '';
+    if (!baseUrl) {
+      return NextResponse.json({ success: false, error: 'NEXT_PUBLIC_SITE_URL is not configured' }, { status: 500 });
+    }
+
     const deepLink = `${baseUrl}/auth?qr=${token}`;
 
     // Build QR image URL using free API (SVG format for better scaling)

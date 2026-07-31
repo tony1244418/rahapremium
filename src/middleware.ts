@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const CANONICAL_HOST = 'www.rahapremium.com';
-const APEX_HOST = 'rahapremium.com';
+const CANONICAL_HOST = process.env.NEXT_PUBLIC_CANONICAL_HOST || 'www.rahapremium.com';
+const APEX_HOST = process.env.NEXT_PUBLIC_APEX_HOST || 'rahapremium.com';
 
 // The adult-site domain. Falls back to an env var so it can be overridden per
 // deployment without a code change.

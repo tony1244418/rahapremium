@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 // than the token allows — we set no-store.
 // ────────────────────────────────────────────────────────────────────────────
 
-const TOKEN_SERVICE_URL = process.env.TOKEN_SERVICE_URL || 'https://aztv-token-service.onrender.com';
+const TOKEN_SERVICE_URL = process.env.TOKEN_SERVICE_URL || '';
 const TOKEN_SERVICE_API_KEY = process.env.TOKEN_SERVICE_API_KEY || '';
 
 function noStore(json: unknown, status = 200) {
@@ -35,6 +35,10 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ channel: s
   if (!TOKEN_SERVICE_API_KEY) {
     console.warn('[play] TOKEN_SERVICE_API_KEY not set');
     return noStore({ error: 'Token service not configured' }, 500);
+  }
+  if (!TOKEN_SERVICE_URL) {
+    console.warn('[play] TOKEN_SERVICE_URL not set');
+    return noStore({ error: 'Token service URL not configured' }, 500);
   }
 
   // Only allow safe channel identifiers to avoid path injection into the
