@@ -203,7 +203,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // ── Device session check ────────────────────────────────────────────
         const localDeviceId = localStorage.getItem(DEVICE_SESSION_KEY);
         if (localDeviceId && isInitializedRef.current) {
-          const sessions: ActiveSession[] = Array.isArray(data.active_sessions) ? data.active_sessions : [];
+          const sessions: ActiveSession[] = Array.isArray((data as any).active_sessions) ? (data as any).active_sessions : [];
           const stillActive = sessions.some(s => s.deviceId === localDeviceId);
           if (sessions.length > 0 && !stillActive) {
             // This device was removed from active_sessions → kick out
@@ -221,7 +221,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (!lastUpdate || now - parseInt(lastUpdate) > 300000) {
             // Fetch absolute latest to prevent race condition overwriting new logins
             const { data: latestData } = await supabase.from('rahapremium_users').select('active_sessions').eq('id', storedUid).single();
-            const latestSessions: ActiveSession[] = Array.isArray(latestData?.active_sessions) ? latestData.active_sessions : [];
+            const latestSessions: ActiveSession[] = Array.isArray((latestData as any)?.active_sessions) ? (latestData as any).active_sessions : [];
             
             const updatedSessions = latestSessions.map(s =>
               s.deviceId === localDeviceId ? { ...s, lastSeenAt: new Date().toISOString() } : s
@@ -235,21 +235,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // ───────────────────────────────────────────────────────────────────
 
         const updatedUser: User = {
-          ...data,
-          uid: data.id,
-          phoneNumber: data.phone_number,
-          displayName: data.display_name,
-          profilePhotoURL: data.profile_photo_url,
-          isBlocked: data.is_blocked,
+          ...(data as any),
+          uid: (data as any).id,
+          phoneNumber: (data as any).phone_number,
+          displayName: (data as any).display_name,
+          profilePhotoURL: (data as any).profile_photo_url,
+          isBlocked: (data as any).is_blocked,
           isAdult: true, // Auto-verified for adult content
-          createdAt: toDate(data.created_at),
-          lastLoginAt: toDate(data.last_login_at),
-          subscription: data.subscription,
-          subscriptionHistory: data.subscription_history || [],
-          paymentHistory: data.payment_history || [],
-          contentAccesses: data.content_accesses || [],
-          liveTvSubscription: data.live_tv_subscription || null,
-          liveTvSubscriptionHistory: data.live_tv_subscription_history || [],
+          createdAt: toDate((data as any).created_at),
+          lastLoginAt: toDate((data as any).last_login_at),
+          subscription: (data as any).subscription,
+          subscriptionHistory: (data as any).subscription_history || [],
+          paymentHistory: (data as any).payment_history || [],
+          contentAccesses: (data as any).content_accesses || [],
+          liveTvSubscription: (data as any).live_tv_subscription || null,
+          liveTvSubscriptionHistory: (data as any).live_tv_subscription_history || [],
         };
 
         // Check subscription expiry
