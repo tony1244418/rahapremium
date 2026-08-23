@@ -80,6 +80,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               uid: userData.id,
               phoneNumber: userData.phone_number,
               displayName: userData.display_name,
+              username: userData.username || userData.display_name || '',
               profilePhotoURL: userData.profile_photo_url,
               isBlocked: userData.is_blocked,
               isAdult: true,
