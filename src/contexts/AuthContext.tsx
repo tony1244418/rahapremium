@@ -474,7 +474,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Remove only this device from active_sessions
         const { data } = await supabase.from('rahapremium_users').select('active_sessions').eq('id', storedUid).single();
         if (data) {
-          const sessions: ActiveSession[] = Array.isArray(data.active_sessions) ? data.active_sessions : [];
+          const sessions: ActiveSession[] = Array.isArray((data as any).active_sessions) ? (data as any).active_sessions : [];
           const updated = sessions.filter(s => s.deviceId !== localDeviceId);
           await supabase.from('rahapremium_users').update({ active_sessions: updated, current_device_id: null }).eq('id', storedUid);
         }
