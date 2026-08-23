@@ -118,9 +118,9 @@ function PayContent() {
               .eq('order_id', orderId)
               .single();
 
-            if (paymentRows && paymentRows.status !== 'completed') {
-              await completePayment(paymentRows.id);
-              console.log('[pay] Force-completed payment in DB:', paymentRows.id);
+            if (paymentRows && (paymentRows as any).status !== 'completed') {
+              await completePayment((paymentRows as any).id);
+              console.log('[pay] Force-completed payment in DB:', (paymentRows as any).id);
             }
           } catch (e) {
             console.error('[pay] Fallback completePayment error:', e);
