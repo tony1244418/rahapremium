@@ -437,21 +437,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error('ADMIN_NOT_FOUND');
       }
       
-      if (!adminRecord.is_active) {
+      if (!(adminRecord as any).is_active) {
         throw new Error('ADMIN_DEACTIVATED');
       }
 
-      await supabase.from('admins').update({ last_login_at: new Date().toISOString() }).eq('id', adminRecord.id);
+      await supabase.from('admins').update({ last_login_at: new Date().toISOString() }).eq('id', (adminRecord as any).id);
 
       const admin: AdminUser = {
-        uid: adminRecord.id,
-        email: adminRecord.email,
-        displayName: adminRecord.display_name || '',
-        role: adminRecord.role || 'admin',
-        permissions: adminRecord.permissions || ['manage_content', 'manage_users', 'view_analytics', 'manage_subscriptions'],
-        createdAt: toDate(adminRecord.created_at),
+        uid: (adminRecord as any).id,
+        email: (adminRecord as any).email,
+        displayName: (adminRecord as any).display_name || '',
+        role: (adminRecord as any).role || 'admin',
+        permissions: (adminRecord as any).permissions || ['manage_content', 'manage_users', 'view_analytics', 'manage_subscriptions'],
+        createdAt: toDate((adminRecord as any).created_at),
         lastLoginAt: new Date(),
-        isActive: adminRecord.is_active
+        isActive: (adminRecord as any).is_active
       };
       setAdminUser(admin);
       setUser(null);
