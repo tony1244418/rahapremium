@@ -44,11 +44,11 @@ export const getControlCenterSettings = async (): Promise<ControlCenterSettings>
       .eq('id', 'controlCenter')
       .single();
 
-    if (!data || !data.data) {
+    if (!data || !(data as any).data) {
       return DEFAULT_CONTROL_CENTER_SETTINGS;
     }
 
-    const parsedData = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
+    const parsedData = typeof (data as any).data === 'string' ? JSON.parse((data as any).data) : (data as any).data;
     return {
       supportEmail: parsedData.supportEmail ?? DEFAULT_CONTROL_CENTER_SETTINGS.supportEmail,
       supportWhatsapp: parsedData.supportWhatsapp ?? DEFAULT_CONTROL_CENTER_SETTINGS.supportWhatsapp,
