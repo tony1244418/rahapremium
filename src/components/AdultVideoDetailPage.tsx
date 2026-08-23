@@ -114,8 +114,8 @@ export const AdultVideoDetailPage: React.FC<AdultVideoDetailPageProps> = ({ vide
                         .select('content_accesses')
                         .eq('id', user.uid)
                         .single();
-                    if (data?.content_accesses) {
-                        setFreshContentAccesses(data.content_accesses);
+                    if (data && (data as any).content_accesses) {
+                        setFreshContentAccesses((data as any).content_accesses);
                     }
                 }
             } finally {
