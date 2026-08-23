@@ -93,7 +93,7 @@ function PayContent() {
               .select('content_accesses')
               .eq('id', user?.uid || '')
               .single();
-            if (data?.content_accesses?.includes(contentId)) {
+            if (data && (data as any).content_accesses?.includes(contentId)) {
               accessConfirmed = true;
               break;
             }
