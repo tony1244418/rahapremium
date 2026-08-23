@@ -515,21 +515,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const { data } = await supabase.from('rahapremium_users').select('*').eq('id', user.uid).single();
         if (data) {
           const updatedUser: User = {
-            ...data,
-            uid: data.id,
-            phoneNumber: data.phone_number,
-            displayName: data.display_name,
-            profilePhotoURL: data.profile_photo_url,
-            isBlocked: data.is_blocked,
+            ...(data as any),
+            uid: (data as any).id,
+            phoneNumber: (data as any).phone_number,
+            displayName: (data as any).display_name,
+            username: (data as any).username || '',
+            profilePhotoURL: (data as any).profile_photo_url,
+            isBlocked: (data as any).is_blocked,
             isAdult: true, // Auto-verified for adult content
-            createdAt: toDate(data.created_at),
-            lastLoginAt: toDate(data.last_login_at),
-            subscription: data.subscription,
-            subscriptionHistory: data.subscription_history || [],
-            paymentHistory: data.payment_history || [],
-            contentAccesses: data.content_accesses || [],
-            liveTvSubscription: data.live_tv_subscription || null,
-            liveTvSubscriptionHistory: data.live_tv_subscription_history || [],
+            createdAt: toDate((data as any).created_at),
+            lastLoginAt: toDate((data as any).last_login_at),
+            subscription: (data as any).subscription,
+            subscriptionHistory: (data as any).subscription_history || [],
+            paymentHistory: (data as any).payment_history || [],
+            contentAccesses: (data as any).content_accesses || [],
+            liveTvSubscription: (data as any).live_tv_subscription || null,
+            liveTvSubscriptionHistory: (data as any).live_tv_subscription_history || [],
           };
           setUser(updatedUser);
         }
