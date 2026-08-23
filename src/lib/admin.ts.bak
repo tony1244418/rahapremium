@@ -1,0 +1,1164 @@
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  limit,
+  onSnapshot,
+  Timestamp,
+  writeBatch
+} from 'firebase/firestore';
+import { db } from './firebase';
+import {
+  User,
+  Movie,
+  Series,
+  Story,
+  PaymentRequest,
+  AdminUser,
+  UserSubscription,
+  SubscriptionPackage
+} from '@/types';
+import { processSubscription, completePayment, failPayment } from './subscriptions';
+
+// Phone number normalization utility
+export const normalizePhoneNumber = (phoneNumber: string): string => {
+  if (!phoneNumber) return phoneNumber;
+
+  // Remove all non-digit characters
+  let cleaned = phoneNumber.replace(/\D/g, '');
+
+  // If it starts with 255, convert to +255 format
+  if (cleaned.startsWith('255')) {
+    return `+${cleaned}`;
+  }
+
+  // If it starts with 0, convert to +255 format
+  if (cleaned.startsWith('0')) {
+    return `+255${cleaned.substring(1)}`;
+  }
+
+  // If it doesn't start with +, add it
+  if (!phoneNumber.startsWith('+')) {
+    return `+${cleaned}`;
+  }
+
+  return phoneNumber;
+};
+
+// Helper function to safely convert various date formats to Date object
+const safeToDate = (value: any): Date => {
+  if (!value) return new Date();
+  if (value.toDate && typeof value.toDate === 'function') return value.toDate();
+  if (value instanceof Date) return value;
+  if (typeof value === 'string' || typeof value === 'number') return new Date(value);
+  return new Date();
+};
+
+// User Management
+export const getAllUsers = async (): Promise<User[]> => {
+  try {
+    const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+
+    console.log(`📊 Fetched ${querySnapshot.docs.length} users from Firestore`);
+
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      try {
+        return {
+          ...data,
+          uid: data.uid || doc.id,
+          createdAt: safeToDate(data.createdAt),
+          lastLoginAt: safeToDate(data.lastLoginAt),
+          subscription: data.subscription ? {
+            ...data.subscription,
+            startDate: safeToDate(data.subscription.startDate),
+            endDate: safeToDate(data.subscription.endDate),
+            createdAt: safeToDate(data.subscription.createdAt),
+          } : null,
+        } as User;
+      } catch (userError) {
+        console.error('Error parsing user document:', doc.id, userError);
+        // Return a minimal valid user object to prevent total failure
+        return {
+          uid: doc.id,
+          phoneNumber: data.phoneNumber || 'unknown',
+          displayName: data.displayName || 'Unknown User',
+          username: data.username || 'unknown',
+          createdAt: safeToDate(data.createdAt),
+          lastLoginAt: safeToDate(data.lastLoginAt),
+          subscription: null,
+          isBlocked: data.isBlocked || false,
+          isAdult: data.isAdult || false,
+          profilePhotoURL: data.profilePhotoURL || null,
+          subscriptionHistory: [],
+          paymentHistory: []
+        } as User;
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    return [];
+  }
+};
+
+export const getUserById = async (userId: string): Promise<User | null> => {
+  try {
+    const docRef = doc(db, 'users', userId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return {
+        ...data,
+        uid: data.uid || docSnap.id,
+        createdAt: safeToDate(data.createdAt),
+        lastLoginAt: safeToDate(data.lastLoginAt),
+        subscription: data.subscription ? {
+          ...data.subscription,
+          startDate: safeToDate(data.subscription.startDate),
+          endDate: safeToDate(data.subscription.endDate),
+          createdAt: safeToDate(data.subscription.createdAt),
+        } : null,
+      } as User;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    return null;
+  }
+};
+
+export const getUserByPhoneNumber = async (phoneNumber: string): Promise<User | null> => {
+  try {
+    // Normalize phone number to +255 format (standard format in database)
+    const normalizedPhone = normalizePhoneNumber(phoneNumber);
+
+    // Try with normalized phone number first
+    let q = query(collection(db, 'users'), where('phoneNumber', '==', normalizedPhone));
+    let querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      const doc = querySnapshot.docs[0];
+      const data = doc.data();
+      return {
+        ...data,
+        uid: data.uid || doc.id,
+        createdAt: safeToDate(data.createdAt),
+        lastLoginAt: safeToDate(data.lastLoginAt),
+        subscription: data.subscription ? {
+          ...data.subscription,
+          startDate: safeToDate(data.subscription.startDate),
+          endDate: safeToDate(data.subscription.endDate),
+          createdAt: safeToDate(data.subscription.createdAt),
+        } : null,
+      } as User;
+    }
+
+    // If not found, try with original phone number (in case it's already in correct format)
+    if (phoneNumber !== normalizedPhone) {
+      q = query(collection(db, 'users'), where('phoneNumber', '==', phoneNumber));
+      querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const doc = querySnapshot.docs[0];
+        const data = doc.data();
+        return {
+          ...data,
+          uid: data.uid || doc.id,
+          createdAt: safeToDate(data.createdAt),
+          lastLoginAt: safeToDate(data.lastLoginAt),
+          subscription: data.subscription ? {
+            ...data.subscription,
+            startDate: safeToDate(data.subscription.startDate),
+            endDate: safeToDate(data.subscription.endDate),
+            createdAt: safeToDate(data.subscription.createdAt),
+          } : null,
+        } as User;
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error fetching user by phone number:', error);
+    return null;
+  }
+};
+
+/**
+ * Finds the user account (by phone number) that has an active subscription.
+ * Handles duplicate-account cases by iterating ALL matching users and returning
+ * the one whose subscription.isActive === true.
+ */
+export const getActiveSubUserByPhone = async (phoneNumber: string): Promise<User | null> => {
+  try {
+    const normalizedPhone = normalizePhoneNumber(phoneNumber);
+    const formats = [normalizedPhone];
+    if (phoneNumber !== normalizedPhone) formats.push(phoneNumber);
+
+    for (const phone of formats) {
+      const q = query(collection(db, 'users'), where('phoneNumber', '==', phone));
+      const snap = await getDocs(q);
+      for (const docSnap of snap.docs) {
+        const data = docSnap.data();
+        if (data.subscription?.isActive) {
+          return {
+            ...data,
+            uid: data.uid || docSnap.id,
+            createdAt: safeToDate(data.createdAt),
+            lastLoginAt: safeToDate(data.lastLoginAt),
+            subscription: {
+              ...data.subscription,
+              startDate: safeToDate(data.subscription.startDate),
+              endDate: safeToDate(data.subscription.endDate),
+              createdAt: safeToDate(data.subscription.createdAt),
+            },
+          } as User;
+        }
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error('Error in getActiveSubUserByPhone:', error);
+    return null;
+  }
+};
+
+export const blockUser = async (userId: string): Promise<void> => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      isBlocked: true,
+      blockedAt: Timestamp.now()
+    });
+  } catch (error) {
+    console.error('Error blocking user:', error);
+    throw error;
+  }
+};
+
+export const unblockUser = async (userId: string): Promise<void> => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      isBlocked: false,
+      unblockedAt: Timestamp.now()
+    });
+  } catch (error) {
+    console.error('Error unblocking user:', error);
+    throw error;
+  }
+};
+
+export const deleteUser = async (userId: string): Promise<void> => {
+  try {
+    const batch = writeBatch(db);
+
+    // Delete user document
+    const userRef = doc(db, 'users', userId);
+    batch.delete(userRef);
+
+    // Delete user's payment history
+    const paymentsQuery = query(collection(db, 'payments'), where('userId', '==', userId));
+    const paymentsSnapshot = await getDocs(paymentsQuery);
+    paymentsSnapshot.docs.forEach(paymentDoc => {
+      batch.delete(paymentDoc.ref);
+    });
+
+    await batch.commit();
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    throw error;
+  }
+};
+
+export const addManualSubscription = async (
+  userId: string,
+  packageType: SubscriptionPackage,
+  adminId: string
+): Promise<void> => {
+  try {
+    console.log('💰 MANUAL PAYMENT: Starting addManualSubscription for user:', userId, 'package:', packageType);
+    const user = await getUserById(userId);
+    if (!user) throw new Error('User not found');
+
+    // Create a manual payment record for tracking
+    const paymentData = {
+      userId,
+      packageType,
+      amount: 0, // Manual subscription
+      phoneNumber: user.phoneNumber,
+      status: 'completed' as const,
+      isManuallyCompleted: true,
+      completedBy: adminId,
+      createdAt: Timestamp.now(),
+      completedAt: Timestamp.now()
+    };
+
+    const paymentRef = await addDoc(collection(db, 'payments'), paymentData);
+
+    // Process the subscription
+    await processSubscription(user, packageType, paymentRef.id, true, adminId);
+  } catch (error) {
+    console.error('Error adding manual subscription:', error);
+    throw error;
+  }
+};
+
+export const addDirectSubscription = async (
+  userId: string,
+  packageType: SubscriptionPackage,
+  adminId: string
+): Promise<void> => {
+  try {
+    console.log('🚀 DIRECT SUBSCRIPTION: Starting addDirectSubscription for user:', userId, 'package:', packageType);
+    const user = await getUserById(userId);
+    if (!user) throw new Error('User not found');
+
+    // Import subscription functions
+    const { SUBSCRIPTION_PACKAGES, calculateSubscriptionEndDate, isUpgrade, calculateDoubledDuration } = await import('./subscriptions');
+
+    const packageConfig = SUBSCRIPTION_PACKAGES[packageType];
+    const now = new Date();
+
+    // Determine subscription type and calculate end date
+    const isRenewal = user.subscription &&
+      user.subscription.packageType === packageType &&
+      user.subscription.isActive;
+
+    const isUpgradeTransaction = user.subscription &&
+      user.subscription.isActive &&
+      isUpgrade(user.subscription.packageType, packageType);
+
+    let endDate: Date;
+    let isRenewalFlag = false;
+    let isUpgradeFlag = false;
+
+    if (isRenewal && user.subscription && user.subscription.isActive) {
+      // Same package renewal - add standard duration to current end date
+      const currentEndDate = new Date(user.subscription.endDate);
+      endDate = new Date(currentEndDate.getTime() + (packageConfig.days * 24 * 60 * 60 * 1000));
+      isRenewalFlag = true;
+    } else if (isUpgradeTransaction && user.subscription) {
+      // Upgrade - add standard duration to current end date (not doubled)
+      const currentEndDate = new Date(user.subscription.endDate);
+      endDate = new Date(currentEndDate.getTime() + (packageConfig.days * 24 * 60 * 60 * 1000));
+      isUpgradeFlag = true;
+    } else if (user.subscription && user.subscription.isActive) {
+      // Stacking: Add new package time to existing subscription
+      const remainingTime = user.subscription.endDate.getTime() - now.getTime();
+      const newPackageTime = packageConfig.days * 24 * 60 * 60 * 1000;
+      endDate = new Date(now.getTime() + remainingTime + newPackageTime);
+    } else {
+      // New subscription
+      endDate = calculateSubscriptionEndDate(user, packageType);
+    }
+
+    // Create new subscription directly
+    const newSubscription = {
+      id: `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      packageType,
+      startDate: Timestamp.fromDate(now),
+      endDate: Timestamp.fromDate(endDate),
+      isActive: true,
+      transactionId: `direct_${Date.now()}`,
+      amount: packageConfig.price, // Use actual package price
+      isRenewal: isRenewalFlag,
+      isUpgrade: isUpgradeFlag,
+      previousPackage: user.subscription?.packageType || null,
+      createdAt: Timestamp.fromDate(now),
+      addedBy: adminId
+    };
+
+    // Update user document directly
+    const userRef = doc(db, 'users', userId);
+    const updatedSubscriptionHistory = [...(user.subscriptionHistory || []), newSubscription];
+
+    // Deactivate previous subscription if exists
+    if (user.subscription) {
+      const updatedHistory = updatedSubscriptionHistory.map(sub =>
+        sub.id === user.subscription?.id ? { ...sub, isActive: false } : sub
+      );
+      updatedSubscriptionHistory.splice(0, updatedSubscriptionHistory.length, ...updatedHistory);
+    }
+
+    await updateDoc(userRef, {
+      subscription: newSubscription,
+      subscriptionHistory: updatedSubscriptionHistory.map(sub => ({
+        ...sub,
+        startDate: sub.startDate instanceof Date ? Timestamp.fromDate(sub.startDate) : sub.startDate,
+        endDate: sub.endDate instanceof Date ? Timestamp.fromDate(sub.endDate) : sub.endDate,
+        createdAt: sub.createdAt instanceof Date ? Timestamp.fromDate(sub.createdAt) : sub.createdAt
+      }))
+    });
+
+    console.log('✅ DIRECT SUBSCRIPTION: Successfully added for user', userId, 'by admin', adminId, 'Package:', packageType, 'Amount:', packageConfig.price);
+
+    // Force refresh user data in real-time
+    try {
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        lastUpdated: Timestamp.now()
+      });
+      console.log('🔄 User data refresh triggered for real-time update');
+    } catch (refreshError) {
+      console.warn('Could not trigger user data refresh:', refreshError);
+    }
+  } catch (error) {
+    console.error('Error adding direct subscription:', error);
+    throw error;
+  }
+};
+
+export const removeUserSubscription = async (
+  userId: string,
+  adminId: string
+): Promise<void> => {
+  try {
+    const user = await getUserById(userId);
+    if (!user) throw new Error('User not found');
+
+    const userRef = doc(db, 'users', userId);
+
+    // Remove the active subscription
+    await updateDoc(userRef, {
+      subscription: null
+    });
+
+    console.log(`Subscription removed for user ${userId} by admin ${adminId}`);
+
+    // Force refresh user data in real-time
+    try {
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        lastUpdated: Timestamp.now()
+      });
+      console.log('User data refresh triggered for real-time update');
+    } catch (refreshError) {
+      console.warn('Could not trigger user data refresh:', refreshError);
+    }
+  } catch (error) {
+    console.error('Error removing user subscription:', error);
+    throw error;
+  }
+};
+
+// Content Management
+export const createMovie = async (movieData: Omit<Movie, 'id' | 'createdAt' | 'updatedAt' | 'views'>): Promise<string> => {
+  try {
+    const docRef = await addDoc(collection(db, 'movies'), {
+      ...movieData,
+      views: 0,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+      releaseDate: Timestamp.fromDate(movieData.releaseDate)
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating movie:', error);
+    throw error;
+  }
+};
+
+export const updateMovie = async (movieId: string, movieData: Partial<Movie>): Promise<void> => {
+  try {
+    const movieRef = doc(db, 'movies', movieId);
+    const updateData = {
+      ...movieData,
+      updatedAt: Timestamp.now(),
+      ...(movieData.releaseDate && { releaseDate: Timestamp.fromDate(movieData.releaseDate) })
+    };
+    await updateDoc(movieRef, updateData);
+  } catch (error) {
+    console.error('Error updating movie:', error);
+    throw error;
+  }
+};
+
+export const deleteMovie = async (movieId: string): Promise<void> => {
+  try {
+    const movieRef = doc(db, 'movies', movieId);
+    await deleteDoc(movieRef);
+  } catch (error) {
+    console.error('Error deleting movie:', error);
+    throw error;
+  }
+};
+
+export const createSeries = async (seriesData: Omit<Series, 'id' | 'createdAt' | 'updatedAt' | 'views' | 'seasons'>): Promise<string> => {
+  try {
+    const docRef = await addDoc(collection(db, 'series'), {
+      ...seriesData,
+      views: 0,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating series:', error);
+    throw error;
+  }
+};
+
+export const updateSeries = async (seriesId: string, seriesData: Partial<Series>): Promise<void> => {
+  try {
+    const seriesRef = doc(db, 'series', seriesId);
+    const updateData = {
+      ...seriesData,
+      updatedAt: Timestamp.now()
+    };
+    await updateDoc(seriesRef, updateData);
+  } catch (error) {
+    console.error('Error updating series:', error);
+    throw error;
+  }
+};
+
+export const deleteSeries = async (seriesId: string): Promise<void> => {
+  try {
+    const batch = writeBatch(db);
+
+    // Delete series document
+    const seriesRef = doc(db, 'series', seriesId);
+    batch.delete(seriesRef);
+
+    // Delete all seasons
+    const seasonsQuery = query(collection(db, 'seasons'), where('seriesId', '==', seriesId));
+    const seasonsSnapshot = await getDocs(seasonsQuery);
+    seasonsSnapshot.docs.forEach(seasonDoc => {
+      batch.delete(seasonDoc.ref);
+    });
+
+    // Delete all episodes
+    const episodesQuery = query(collection(db, 'episodes'), where('seriesId', '==', seriesId));
+    const episodesSnapshot = await getDocs(episodesQuery);
+    episodesSnapshot.docs.forEach(episodeDoc => {
+      batch.delete(episodeDoc.ref);
+    });
+
+    await batch.commit();
+  } catch (error) {
+    console.error('Error deleting series:', error);
+    throw error;
+  }
+};
+
+export const createStory = async (storyData: Omit<Story, 'id' | 'createdAt' | 'updatedAt' | 'views'>): Promise<string> => {
+  try {
+    const docRef = await addDoc(collection(db, 'stories'), {
+      ...storyData,
+      views: 0,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating story:', error);
+    throw error;
+  }
+};
+
+export const updateStory = async (storyId: string, storyData: Partial<Story>): Promise<void> => {
+  try {
+    const storyRef = doc(db, 'stories', storyId);
+    const updateData = {
+      ...storyData,
+      updatedAt: Timestamp.now()
+    };
+    await updateDoc(storyRef, updateData);
+  } catch (error) {
+    console.error('Error updating story:', error);
+    throw error;
+  }
+};
+
+export const deleteStory = async (storyId: string): Promise<void> => {
+  try {
+    const storyRef = doc(db, 'stories', storyId);
+    await deleteDoc(storyRef);
+  } catch (error) {
+    console.error('Error deleting story:', error);
+    throw error;
+  }
+};
+
+// Payment Management
+export const getAllPayments = async (): Promise<PaymentRequest[]> => {
+  try {
+    const q = query(collection(db, 'payments'), orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+
+    console.log(`💳 Fetched ${querySnapshot.docs.length} payments from Firestore`);
+
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      try {
+        return {
+          ...data,
+          id: doc.id,
+          createdAt: safeToDate(data.createdAt),
+          ...(data.completedAt && { completedAt: safeToDate(data.completedAt) }),
+          ...(data.failedAt && { failedAt: safeToDate(data.failedAt) }),
+          ...(data.cancelledAt && { cancelledAt: safeToDate(data.cancelledAt) })
+        } as PaymentRequest;
+      } catch (paymentError) {
+        console.error('Error parsing payment document:', doc.id, paymentError);
+        // Return minimal valid payment object
+        return {
+          id: doc.id,
+          userId: data.userId || 'unknown',
+          packageType: data.packageType || 'FEDHA',
+          amount: data.amount || 0,
+          phoneNumber: data.phoneNumber || 'unknown',
+          status: data.status || 'pending',
+          createdAt: safeToDate(data.createdAt)
+        } as PaymentRequest;
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching payments:', error);
+    return [];
+  }
+};
+
+export const getPaymentById = async (paymentId: string): Promise<PaymentRequest | null> => {
+  try {
+    const docRef = doc(db, 'payments', paymentId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return {
+        ...data,
+        id: docSnap.id,
+        createdAt: safeToDate(data.createdAt),
+        ...(data.completedAt && { completedAt: safeToDate(data.completedAt) }),
+        ...(data.failedAt && { failedAt: safeToDate(data.failedAt) }),
+        ...(data.cancelledAt && { cancelledAt: safeToDate(data.cancelledAt) })
+      } as PaymentRequest;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching payment:', error);
+    return null;
+  }
+};
+
+export const completePaymentManually = async (paymentId: string, adminId: string): Promise<void> => {
+  try {
+    await completePayment(paymentId, true, adminId);
+  } catch (error) {
+    console.error('Error completing payment manually:', error);
+    throw error;
+  }
+};
+
+export const failPaymentManually = async (paymentId: string, reason: string): Promise<void> => {
+  try {
+    await failPayment(paymentId, reason);
+  } catch (error) {
+    console.error('Error failing payment manually:', error);
+    throw error;
+  }
+};
+
+// Analytics
+export interface AdminAnalytics {
+  totalUsers: number;
+  activeSubscriptions: number;
+  totalRevenue: number;
+  monthlyRevenue: number;
+  totalMovies: number;
+  totalSeries: number;
+  totalStories: number;
+  pendingPayments: number;
+  blockedUsers: number;
+}
+
+export const getAnalytics = async (): Promise<AdminAnalytics> => {
+  try {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Get all collections data in parallel
+    const [usersSnapshot, paymentsSnapshot, moviesSnapshot, seriesSnapshot, storiesSnapshot] = await Promise.all([
+      getDocs(collection(db, 'users')),
+      getDocs(collection(db, 'payments')),
+      getDocs(collection(db, 'movies')),
+      getDocs(collection(db, 'series')),
+      getDocs(collection(db, 'stories'))
+    ]);
+
+    const users = usersSnapshot.docs.map(doc => doc.data() as User);
+    const payments = paymentsSnapshot.docs.map(doc => ({
+      ...doc.data(),
+      createdAt: safeToDate(doc.data().createdAt),
+      ...(doc.data().completedAt && { completedAt: safeToDate(doc.data().completedAt) })
+    })) as PaymentRequest[];
+
+    // Calculate analytics
+    const totalUsers = users.length;
+    const activeSubscriptions = users.filter(user =>
+      user.subscription &&
+      user.subscription.isActive &&
+      new Date(user.subscription.endDate) > now
+    ).length;
+    const blockedUsers = users.filter(user => user.isBlocked).length;
+
+    const completedPayments = payments.filter(p => p.status === 'completed');
+    const totalRevenue = completedPayments.reduce((sum, p) => sum + p.amount, 0);
+    const monthlyRevenue = completedPayments
+      .filter(p => p.completedAt && p.completedAt >= startOfMonth)
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    const pendingPayments = payments.filter(p => p.status === 'pending').length;
+
+    return {
+      totalUsers,
+      activeSubscriptions,
+      totalRevenue,
+      monthlyRevenue,
+      totalMovies: moviesSnapshot.size,
+      totalSeries: seriesSnapshot.size,
+      totalStories: storiesSnapshot.size,
+      pendingPayments,
+      blockedUsers
+    };
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    return {
+      totalUsers: 0,
+      activeSubscriptions: 0,
+      totalRevenue: 0,
+      monthlyRevenue: 0,
+      totalMovies: 0,
+      totalSeries: 0,
+      totalStories: 0,
+      pendingPayments: 0,
+      blockedUsers: 0
+    };
+  }
+};
+
+// Real-time subscriptions for admin
+export const subscribeToUsers = (callback: (users: User[]) => void) => {
+  const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+
+  return onSnapshot(q, (querySnapshot) => {
+    console.log(`🔄 Real-time update: ${querySnapshot.docs.length} users`);
+    const users = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      try {
+        return {
+          ...data,
+          uid: data.uid || doc.id,
+          createdAt: safeToDate(data.createdAt),
+          lastLoginAt: safeToDate(data.lastLoginAt),
+          subscription: data.subscription ? {
+            ...data.subscription,
+            startDate: safeToDate(data.subscription.startDate),
+            endDate: safeToDate(data.subscription.endDate),
+            createdAt: safeToDate(data.subscription.createdAt),
+          } : null,
+        } as User;
+      } catch (userError) {
+        console.error('Error parsing user document in real-time:', doc.id, userError);
+        return {
+          uid: doc.id,
+          phoneNumber: data.phoneNumber || 'unknown',
+          displayName: data.displayName || 'Unknown User',
+          username: data.username || 'unknown',
+          createdAt: safeToDate(data.createdAt),
+          lastLoginAt: safeToDate(data.lastLoginAt),
+          subscription: null,
+          isBlocked: data.isBlocked || false,
+          isAdult: data.isAdult || false,
+          profilePhotoURL: data.profilePhotoURL || null,
+          subscriptionHistory: [],
+          paymentHistory: []
+        } as User;
+      }
+    });
+    callback(users);
+  });
+};
+
+export const subscribeToPayments = (callback: (payments: PaymentRequest[]) => void) => {
+  const q = query(collection(db, 'payments'), orderBy('createdAt', 'desc'));
+
+  return onSnapshot(q, (querySnapshot) => {
+    console.log(`🔄 Real-time update: ${querySnapshot.docs.length} payments`);
+    const payments = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      try {
+        return {
+          ...data,
+          id: doc.id,
+          createdAt: safeToDate(data.createdAt),
+          ...(data.completedAt && { completedAt: safeToDate(data.completedAt) }),
+          ...(data.failedAt && { failedAt: safeToDate(data.failedAt) }),
+          ...(data.cancelledAt && { cancelledAt: safeToDate(data.cancelledAt) })
+        } as PaymentRequest;
+      } catch (paymentError) {
+        console.error('Error parsing payment in real-time:', doc.id, paymentError);
+        return {
+          id: doc.id,
+          userId: data.userId || 'unknown',
+          packageType: data.packageType || 'FEDHA',
+          amount: data.amount || 0,
+          phoneNumber: data.phoneNumber || 'unknown',
+          status: data.status || 'pending',
+          createdAt: safeToDate(data.createdAt)
+        } as PaymentRequest;
+      }
+    });
+    callback(payments);
+  });
+};
+
+export const subscribeToAnalytics = (callback: (analytics: AdminAnalytics) => void) => {
+  // Subscribe to multiple collections for real-time analytics
+  const unsubscribeUsers = onSnapshot(collection(db, 'users'), () => {
+    getAnalytics().then(callback);
+  });
+
+  const unsubscribePayments = onSnapshot(collection(db, 'payments'), () => {
+    getAnalytics().then(callback);
+  });
+
+  // Return combined unsubscribe function
+  return () => {
+    unsubscribeUsers();
+    unsubscribePayments();
+  };
+};
+
+// Detailed Analytics Interface
+export interface DetailedAnalytics {
+  // Basic metrics
+  totalUsers: number;
+  activeSubscriptions: number;
+  totalRevenue: number;
+  monthlyRevenue: number;
+  weeklyRevenue: number;
+  dailyRevenue: number;
+  totalMovies: number;
+  totalSeries: number;
+  totalStories: number;
+  pendingPayments: number;
+  blockedUsers: number;
+
+  // Revenue breakdown
+  revenueByPackage: {
+    FEDHA: number;
+    CHUMA: number;
+    DHAHABU: number;
+    ALMASI: number;
+    MALKIA: number;
+  };
+
+  // Subscription breakdown
+  subscriptionsByPackage: {
+    FEDHA: number;
+    CHUMA: number;
+    DHAHABU: number;
+    ALMASI: number;
+    MALKIA: number;
+  };
+
+  // Payment statistics
+  totalPayments: number;
+  completedPayments: number;
+  failedPayments: number;
+  cancelledPayments: number;
+  successRate: number;
+
+  // User statistics
+  newUsersToday: number;
+  newUsersThisWeek: number;
+  newUsersThisMonth: number;
+  usersWithSubscription: number;
+  usersWithoutSubscription: number;
+
+  // Revenue trends (last 7 days)
+  dailyRevenueLast7Days: { date: string; revenue: number }[];
+
+  // User growth (last 7 days)
+  dailyUsersLast7Days: { date: string; users: number }[];
+
+  // Payment trends (last 7 days)
+  dailyPaymentsLast7Days: { date: string; completed: number; failed: number }[];
+}
+
+export const getDetailedAnalytics = async (): Promise<DetailedAnalytics> => {
+  try {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Get all collections data in parallel
+    const [usersSnapshot, paymentsSnapshot, moviesSnapshot, seriesSnapshot, storiesSnapshot] = await Promise.all([
+      getDocs(collection(db, 'users')),
+      getDocs(collection(db, 'payments')),
+      getDocs(collection(db, 'movies')),
+      getDocs(collection(db, 'series')),
+      getDocs(collection(db, 'stories'))
+    ]);
+
+    const users = usersSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        ...data,
+        uid: data.uid || doc.id,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+        lastLoginAt: data.lastLoginAt?.toDate ? data.lastLoginAt.toDate() : new Date(),
+        subscription: data.subscription ? {
+          ...data.subscription,
+          startDate: data.subscription.startDate?.toDate ? data.subscription.startDate.toDate() : new Date(),
+          endDate: data.subscription.endDate?.toDate ? data.subscription.endDate.toDate() : new Date(),
+        } : null,
+      } as User;
+    });
+
+    const payments = paymentsSnapshot.docs.map(doc => ({
+      ...doc.data(),
+      id: doc.id,
+      createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date(),
+      ...(doc.data().completedAt && { completedAt: doc.data().completedAt?.toDate ? doc.data().completedAt.toDate() : new Date() })
+    })) as PaymentRequest[];
+
+    // Basic metrics
+    const totalUsers = users.length;
+    const activeSubscriptions = users.filter(user =>
+      user.subscription &&
+      user.subscription.isActive &&
+      new Date(user.subscription.endDate) > now
+    ).length;
+    const blockedUsers = users.filter(user => user.isBlocked).length;
+
+    // Payment statistics
+    const completedPayments = payments.filter(p => p.status === 'completed');
+    const failedPayments = payments.filter(p => p.status === 'failed');
+    const cancelledPayments = payments.filter(p => p.status === 'cancelled');
+    const totalPayments = payments.length;
+    const successRate = totalPayments > 0 ? (completedPayments.length / totalPayments) * 100 : 0;
+
+    // Revenue calculations
+    const totalRevenue = completedPayments.reduce((sum, p) => sum + p.amount, 0);
+    const monthlyRevenue = completedPayments
+      .filter(p => p.completedAt && p.completedAt >= startOfMonth)
+      .reduce((sum, p) => sum + p.amount, 0);
+    const weeklyRevenue = completedPayments
+      .filter(p => p.completedAt && p.completedAt >= startOfWeek)
+      .reduce((sum, p) => sum + p.amount, 0);
+    const dailyRevenue = completedPayments
+      .filter(p => p.completedAt && p.completedAt >= startOfDay)
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    // Revenue by package
+    const revenueByPackage = {
+      FEDHA: 0,
+      CHUMA: 0,
+      DHAHABU: 0,
+      ALMASI: 0,
+      MALKIA: 0
+    };
+
+    completedPayments.forEach(payment => {
+      if (payment.packageType && revenueByPackage.hasOwnProperty(payment.packageType)) {
+        revenueByPackage[payment.packageType as keyof typeof revenueByPackage] += payment.amount;
+      }
+    });
+
+    // Subscriptions by package
+    const subscriptionsByPackage = {
+      FEDHA: 0,
+      CHUMA: 0,
+      DHAHABU: 0,
+      ALMASI: 0,
+      MALKIA: 0
+    };
+
+    users.forEach(user => {
+      if (user.subscription && user.subscription.isActive && new Date(user.subscription.endDate) > now) {
+        const packageType = user.subscription.packageType;
+        if (subscriptionsByPackage.hasOwnProperty(packageType)) {
+          subscriptionsByPackage[packageType as keyof typeof subscriptionsByPackage]++;
+        }
+      }
+    });
+
+    // User statistics
+    const newUsersToday = users.filter(u => new Date(u.createdAt) >= startOfDay).length;
+    const newUsersThisWeek = users.filter(u => new Date(u.createdAt) >= startOfWeek).length;
+    const newUsersThisMonth = users.filter(u => new Date(u.createdAt) >= startOfMonth).length;
+    const usersWithSubscription = users.filter(u => u.subscription && u.subscription.isActive && new Date(u.subscription.endDate) > now).length;
+    const usersWithoutSubscription = totalUsers - usersWithSubscription;
+
+    // Last 7 days revenue
+    const dailyRevenueLast7Days: { date: string; revenue: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(now.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      const nextDate = new Date(date);
+      nextDate.setDate(date.getDate() + 1);
+
+      const revenue = completedPayments
+        .filter(p => p.completedAt && p.completedAt >= date && p.completedAt < nextDate)
+        .reduce((sum, p) => sum + p.amount, 0);
+
+      dailyRevenueLast7Days.push({
+        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        revenue
+      });
+    }
+
+    // Last 7 days users
+    const dailyUsersLast7Days: { date: string; users: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(now.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      const nextDate = new Date(date);
+      nextDate.setDate(date.getDate() + 1);
+
+      const usersCount = users.filter(u => {
+        const userDate = new Date(u.createdAt);
+        return userDate >= date && userDate < nextDate;
+      }).length;
+
+      dailyUsersLast7Days.push({
+        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        users: usersCount
+      });
+    }
+
+    // Last 7 days payments
+    const dailyPaymentsLast7Days: { date: string; completed: number; failed: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(now.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      const nextDate = new Date(date);
+      nextDate.setDate(date.getDate() + 1);
+
+      const completed = completedPayments.filter(p => {
+        const paymentDate = p.completedAt || p.createdAt;
+        return paymentDate >= date && paymentDate < nextDate;
+      }).length;
+
+      const failed = failedPayments.filter(p => {
+        const paymentDate = p.createdAt;
+        return paymentDate >= date && paymentDate < nextDate;
+      }).length;
+
+      dailyPaymentsLast7Days.push({
+        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        completed,
+        failed
+      });
+    }
+
+    return {
+      totalUsers,
+      activeSubscriptions,
+      totalRevenue,
+      monthlyRevenue,
+      weeklyRevenue,
+      dailyRevenue,
+      totalMovies: moviesSnapshot.size,
+      totalSeries: seriesSnapshot.size,
+      totalStories: storiesSnapshot.size,
+      pendingPayments: payments.filter(p => p.status === 'pending').length,
+      blockedUsers,
+      revenueByPackage,
+      subscriptionsByPackage,
+      totalPayments,
+      completedPayments: completedPayments.length,
+      failedPayments: failedPayments.length,
+      cancelledPayments: cancelledPayments.length,
+      successRate,
+      newUsersToday,
+      newUsersThisWeek,
+      newUsersThisMonth,
+      usersWithSubscription,
+      usersWithoutSubscription,
+      dailyRevenueLast7Days,
+      dailyUsersLast7Days,
+      dailyPaymentsLast7Days
+    };
+  } catch (error) {
+    console.error('Error fetching detailed analytics:', error);
+    return {
+      totalUsers: 0,
+      activeSubscriptions: 0,
+      totalRevenue: 0,
+      monthlyRevenue: 0,
+      weeklyRevenue: 0,
+      dailyRevenue: 0,
+      totalMovies: 0,
+      totalSeries: 0,
+      totalStories: 0,
+      pendingPayments: 0,
+      blockedUsers: 0,
+      revenueByPackage: { FEDHA: 0, CHUMA: 0, DHAHABU: 0, ALMASI: 0, MALKIA: 0 },
+      subscriptionsByPackage: { FEDHA: 0, CHUMA: 0, DHAHABU: 0, ALMASI: 0, MALKIA: 0 },
+      totalPayments: 0,
+      completedPayments: 0,
+      failedPayments: 0,
+      cancelledPayments: 0,
+      successRate: 0,
+      newUsersToday: 0,
+      newUsersThisWeek: 0,
+      newUsersThisMonth: 0,
+      usersWithSubscription: 0,
+      usersWithoutSubscription: 0,
+      dailyRevenueLast7Days: [],
+      dailyUsersLast7Days: [],
+      dailyPaymentsLast7Days: []
+    };
+  }
+};
+
+export const subscribeToDetailedAnalytics = (callback: (analytics: DetailedAnalytics) => void) => {
+  // Subscribe to multiple collections for real-time analytics
+  const unsubscribeUsers = onSnapshot(collection(db, 'users'), () => {
+    getDetailedAnalytics().then(callback);
+  });
+
+  const unsubscribePayments = onSnapshot(collection(db, 'payments'), () => {
+    getDetailedAnalytics().then(callback);
+  });
+
+  const unsubscribeMovies = onSnapshot(collection(db, 'movies'), () => {
+    getDetailedAnalytics().then(callback);
+  });
+
+  const unsubscribeSeries = onSnapshot(collection(db, 'series'), () => {
+    getDetailedAnalytics().then(callback);
+  });
+
+  const unsubscribeStories = onSnapshot(collection(db, 'stories'), () => {
+    getDetailedAnalytics().then(callback);
+  });
+
+  // Return combined unsubscribe function
+  return () => {
+    unsubscribeUsers();
+    unsubscribePayments();
+    unsubscribeMovies();
+    unsubscribeSeries();
+    unsubscribeStories();
+  };
+};
