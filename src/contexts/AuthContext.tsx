@@ -100,7 +100,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             // Limit considers BOTH the general and Live TV subscriptions,
             // using the admin-configured maxDevices per package.
             const limit = await getUserDeviceLimit(userData);
-            let sessions: ActiveSession[] = Array.isArray(userData.active_sessions) ? userData.active_sessions : [];
+            let sessions: ActiveSession[] = Array.isArray((userData as any).active_sessions) ? (userData as any).active_sessions : [];
             sessions = sessions.filter(s => s.deviceId !== deviceId);
             while (sessions.length >= limit) {
               sessions.sort((a, b) => new Date(a.lastSeenAt).getTime() - new Date(b.lastSeenAt).getTime());
