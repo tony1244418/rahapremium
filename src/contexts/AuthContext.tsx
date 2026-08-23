@@ -76,22 +76,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
           const { data: userData, error } = await supabase.from('rahapremium_users').select('*').eq('id', storedUid).single();
           if (userData && !error) {
             const loadedUser: User = {
-              ...userData,
-              uid: userData.id,
-              phoneNumber: userData.phone_number,
-              displayName: userData.display_name,
-              username: userData.username || userData.display_name || '',
-              profilePhotoURL: userData.profile_photo_url,
-              isBlocked: userData.is_blocked,
+              ...(userData as any),
+              uid: (userData as any).id,
+              phoneNumber: (userData as any).phone_number,
+              displayName: (userData as any).display_name,
+              username: (userData as any).username || (userData as any).display_name || '',
+              profilePhotoURL: (userData as any).profile_photo_url,
+              isBlocked: (userData as any).is_blocked,
               isAdult: true,
-              createdAt: toDate(userData.created_at),
-              lastLoginAt: toDate(userData.last_login_at),
-              subscription: userData.subscription,
-              subscriptionHistory: userData.subscription_history || [],
-              paymentHistory: userData.payment_history || [],
-              contentAccesses: userData.content_accesses || [],
-              liveTvSubscription: userData.live_tv_subscription || null,
-              liveTvSubscriptionHistory: userData.live_tv_subscription_history || [],
+              createdAt: toDate((userData as any).created_at),
+              lastLoginAt: toDate((userData as any).last_login_at),
+              subscription: (userData as any).subscription,
+              subscriptionHistory: (userData as any).subscription_history || [],
+              paymentHistory: (userData as any).payment_history || [],
+              contentAccesses: (userData as any).content_accesses || [],
+              liveTvSubscription: (userData as any).live_tv_subscription || null,
+              liveTvSubscriptionHistory: (userData as any).live_tv_subscription_history || [],
             };
 
             // Add/update this device in active_sessions
