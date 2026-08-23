@@ -277,12 +277,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const checkPhoneExists = async (phoneNumber: string): Promise<boolean> => {
     const { data } = await supabase.from('rahapremium_users').select('id').eq('phone_number', phoneNumber).limit(1);
-    return !!(data && data.length > 0);
+    return !!(data && (data as any).length > 0);
   };
 
   const checkUsernameExists = async (username: string): Promise<boolean> => {
     const { data } = await supabase.from('rahapremium_users').select('id').eq('username', username).limit(1);
-    return !!(data && data.length > 0);
+    return !!(data && (data as any).length > 0);
   };
 
   const signInWithPhone = async (phoneNumber: string, username?: string, displayName?: string) => {
