@@ -125,8 +125,8 @@ export default function QRConnectModal({ isOpen, onClose, initialTab = 'myqr' }:
       .select('active_sessions')
       .eq('id', user.uid)
       .single();
-    if (data?.active_sessions) {
-      setActiveSessions(Array.isArray(data.active_sessions) ? data.active_sessions : []);
+    if (data && (data as any).active_sessions) {
+      setActiveSessions(Array.isArray((data as any).active_sessions) ? (data as any).active_sessions : []);
     }
   }, [user?.uid]);
 
