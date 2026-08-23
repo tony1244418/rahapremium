@@ -361,7 +361,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           throw new Error('INVALID_CREDENTIALS');
         }
 
-        if (userData.is_blocked) {
+        if ((userData as any).is_blocked) {
           throw new Error('ACCOUNT_BLOCKED');
         }
 
@@ -371,7 +371,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const deviceId = getOrCreateDeviceId();
         const deviceLabel = getDeviceLabel();
         const limit = await getUserDeviceLimit(userData);
-        let sessions: ActiveSession[] = Array.isArray(userData.active_sessions) ? userData.active_sessions : [];
+        let sessions: ActiveSession[] = Array.isArray((userData as any).active_sessions) ? (userData as any).active_sessions : [];
         sessions = sessions.filter(s => s.deviceId !== deviceId);
         while (sessions.length >= limit) {
           sessions.sort((a, b) => new Date(a.lastSeenAt).getTime() - new Date(b.lastSeenAt).getTime());
@@ -385,27 +385,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
             current_device_id: deviceId,
             active_sessions: sessions,
           })
-          .eq('id', userData.id);
+          .eq('id', (userData as any).id);
 
-        localStorage.setItem('supabase_uid', userData.id);
+        localStorage.setItem('supabase_uid', (userData as any).id);
         localStorage.setItem('supabase_phone', phoneNumber);
 
         const loggedInUser: User = {
-          ...userData,
-          uid: userData.id,
-          phoneNumber: userData.phone_number,
-          displayName: userData.display_name,
-          profilePhotoURL: userData.profile_photo_url,
-          isBlocked: userData.is_blocked,
+          ...(userData as any),
+          uid: (userData as any).id,
+          phoneNumber: (userData as any).phone_number,
+          displayName: (userData as any).display_name,
+          profilePhotoURL: (userData as any).profile_photo_url,
+          isBlocked: (userData as any).is_blocked,
           isAdult: true, // Auto-verified for adult content
-          createdAt: toDate(userData.created_at),
+          createdAt: toDate((userData as any).created_at),
           lastLoginAt: new Date(),
-          subscription: userData.subscription,
-          subscriptionHistory: userData.subscription_history || [],
-          paymentHistory: userData.payment_history || [],
-          contentAccesses: userData.content_accesses || [],
-          liveTvSubscription: userData.live_tv_subscription || null,
-          liveTvSubscriptionHistory: userData.live_tv_subscription_history || [],
+          subscription: (userData as any).subscription,
+          subscriptionHistory: (userData as any).subscription_history || [],
+          paymentHistory: (userData as any).payment_history || [],
+          contentAccesses: (userData as any).content_accesses || [],
+          liveTvSubscription: (userData as any).live_tv_subscription || null,
+          liveTvSubscriptionHistory: (userData as any).live_tv_subscription_history || [],
         };
 
         setUser(loggedInUser);
