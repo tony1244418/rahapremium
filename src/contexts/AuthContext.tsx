@@ -146,16 +146,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // Check if this Supabase auth user is an admin in admins table
           const { data: adminData } = await supabase.from('admins').select('*').eq('email', session.user.email).single();
           
-          if (adminData && adminData.is_active) {
+          if (adminData && (adminData as any).is_active) {
             const admin: AdminUser = {
-              uid: adminData.id,
-              email: adminData.email,
-              displayName: adminData.display_name || session.user.user_metadata?.display_name || '',
-              role: adminData.role || 'admin',
-              permissions: adminData.permissions || ['manage_content', 'manage_users', 'view_analytics', 'manage_subscriptions'],
-              createdAt: toDate(adminData.created_at),
-              lastLoginAt: toDate(adminData.last_login_at),
-              isActive: adminData.is_active
+              uid: (adminData as any).id,
+              email: (adminData as any).email,
+              displayName: (adminData as any).display_name || session.user.user_metadata?.display_name || '',
+              role: (adminData as any).role || 'admin',
+              permissions: (adminData as any).permissions || ['manage_content', 'manage_users', 'view_analytics', 'manage_subscriptions'],
+              createdAt: toDate((adminData as any).created_at),
+              lastLoginAt: toDate((adminData as any).last_login_at),
+              isActive: (adminData as any).is_active
             };
             setAdminUser(admin);
             setUser(null);
