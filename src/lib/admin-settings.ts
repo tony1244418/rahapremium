@@ -63,7 +63,7 @@ export const getControlCenterSettings = async (): Promise<ControlCenterSettings>
       socialTiktok: parsedData.socialTiktok ?? '',
       socialTelegram: parsedData.socialTelegram ?? '',
       socialYoutube: parsedData.socialYoutube ?? '',
-      updatedAt: data.updated_at ? new Date(data.updated_at) : DEFAULT_CONTROL_CENTER_SETTINGS.updatedAt
+      updatedAt: (data as any).updated_at ? new Date((data as any).updated_at) : DEFAULT_CONTROL_CENTER_SETTINGS.updatedAt
     };
   } catch (error) {
     console.error('Failed to fetch control center settings:', error);
