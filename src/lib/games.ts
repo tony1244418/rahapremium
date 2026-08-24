@@ -304,7 +304,7 @@ export const grantGameAccess = async (userId: string, gameId: string, durationDa
     }).select().single();
 
     if (error) throw error;
-    return { success: true, accessId: data.id };
+    return { success: true, accessId: (data as any).id };
   } catch (error) {
     console.error('Error granting game access:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
