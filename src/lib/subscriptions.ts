@@ -88,8 +88,8 @@ const getPackagesConfigByKey = async (
 ): Promise<PackagesConfigMap> => {
   try {
     const { data, error } = await supabase.from('admin_settings').select('data').eq('id', settingsKey).single();
-    if (!error && data?.data) {
-      const parsedData = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
+    if (!error && (data as any)?.data) {
+      const parsedData = typeof (data as any).data === 'string' ? JSON.parse((data as any).data) : (data as any).data;
       const cleanData: Partial<PackagesConfigMap> = {};
       for (const key of Object.keys(parsedData)) {
         if (isNaN(Number(key))) {
