@@ -253,7 +253,7 @@ export const checkGameAccess = async (userId: string, gameId: string) => {
       .single();
 
     // No rows returned means no access
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error && (error as any).code !== 'PGRST116') throw error;
     if (!gameAccess) {
       return { success: true, hasAccess: false, reason: 'No active access found' };
     }
