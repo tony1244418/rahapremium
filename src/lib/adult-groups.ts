@@ -145,7 +145,7 @@ export const incrementAdultGroupViews = async (groupId: string) => {
     const { data: group } = await supabase.from('adult_groups').select('views').eq('id', groupId).single();
     if (group) {
       await supabase.from('adult_groups').update({
-        views: (group.views || 0) + 1,
+        views: ((group as any).views || 0) + 1,
         updated_at: new Date().toISOString(),
       }).eq('id', groupId);
     }
