@@ -476,7 +476,7 @@ export const addMovie = async (movieData: Omit<Movie, 'id' | 'createdAt' | 'upda
     }).select().single();
 
     if (error) throw error;
-    return { success: true, id: data.id };
+    return { success: true, id: (data as any).id };
   } catch (error) {
     console.error('Error adding movie:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
@@ -560,7 +560,7 @@ export const addSeries = async (seriesData: Omit<Series, 'id' | 'createdAt' | 'u
     }).select().single();
 
     if (error) throw error;
-    return { success: true, id: data.id };
+    return { success: true, id: (data as any).id };
   } catch (error) {
     console.error('Error adding series:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
@@ -627,7 +627,7 @@ export const addSeason = async (seasonData: Omit<Season, 'id' | 'createdAt' | 'u
     }).select().single();
 
     if (error) throw error;
-    return { success: true, id: data.id };
+    return { success: true, id: (data as any).id };
   } catch (error) {
     console.error('Error adding season:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
@@ -693,7 +693,7 @@ export const addEpisode = async (episodeData: Omit<Episode, 'id' | 'createdAt' |
     }).select().single();
 
     if (error) throw error;
-    return { success: true, id: data.id };
+    return { success: true, id: (data as any).id };
   } catch (error) {
     console.error('Error adding episode:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
@@ -761,7 +761,7 @@ export const addStory = async (storyData: Omit<Story, 'id' | 'createdAt' | 'upda
     }).select().single();
 
     if (error) throw error;
-    return { success: true, id: data.id };
+    return { success: true, id: (data as any).id };
   } catch (error) {
     console.error('Error adding story:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
