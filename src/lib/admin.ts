@@ -447,9 +447,9 @@ export const getAnalytics = async (): Promise<AdminAnalytics> => {
     const [
       { data: users },
       { data: payments },
-      { count: moviesCount },
-      { count: seriesCount },
-      { count: storiesCount }
+      moviesResult,
+      seriesResult,
+      storiesResult
     ] = await Promise.all([
       supabase.from('rahapremium_users').select('is_blocked, subscription, live_tv_subscription'),
       supabase.from('payments').select('amount, status, completed_at, order_id').eq('status', 'completed'),
@@ -457,23 +457,28 @@ export const getAnalytics = async (): Promise<AdminAnalytics> => {
       supabase.from('series').select('*', { count: 'exact', head: true }),
       supabase.from('stories').select('*', { count: 'exact', head: true })
     ]);
+    
+    const moviesCount = (moviesResult as any).count;
+    const seriesCount = (seriesResult as any).count;
+    const storiesCount = (storiesResult as any).count;
 
     // Count users with EITHER an active normal OR an active Live TV subscription.
-    const activeSubscriptions = (users || []).filter(user => {
+    const activeSubscriptions = ((users as any) || []).filter((user: any) => {
       const normalActive = user.subscription?.isActive && new Date(user.subscription.endDate) > now;
       const liveTvActive = user.live_tv_subscription?.isActive && new Date(user.live_tv_subscription.endDate) > now;
       return normalActive || liveTvActive;
     }).length;
-    const blockedUsers = (users || []).filter(user => user.is_blocked).length;
+    const blockedUsers = ((users as any) || []).filter((user: any) => user.is_blocked).length;
 
-    const totalRevenue = (payments || [])
-      .filter(p => !(p.order_id && p.order_id.toLowerCase().startsWith('manual')))
-      .reduce((sum, p) => sum + p.amount, 0);
-    const monthlyRevenue = (payments || [])
-      .filter(p => p.completed_at && p.completed_at >= startOfMonth && !(p.order_id && p.order_id.toLowerCase().startsWith('manual')))
-      .reduce((sum, p) => sum + p.amount, 0);
+    const totalRevenue = ((payments as any) || [])
+      .filter((p: any) => !(p.order_id && p.order_id.toLowerCase().startsWith('manual')))
+      .reduce((sum: number, p: any) => sum + p.amount, 0);
+    const monthlyRevenue = ((payments as any) || [])
+      .filter((p: any) => p.completed_at && p.completed_at >= startOfMonth && !(p.order_id && p.order_id.toLowerCase().startsWith('manual')))
+      .reduce((sum: number, p: any) => sum + p.amount, 0);
 
-    const { count: pendingPayments } = await supabase.from('payments').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+    const pendingResult = await supabase.from('payments').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+    const pendingPayments = (pendingResult as any).count;
 
     return {
       totalUsers: users?.length || 0,
