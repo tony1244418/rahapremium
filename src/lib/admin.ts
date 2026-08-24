@@ -610,7 +610,7 @@ export const getDetailedAnalytics = async (): Promise<DetailedAnalytics> => {
   let normalSubscriptions = 0;
   let liveTvSubscriptions = 0;
   
-  let totalPayments = allPayments.length;
+  let totalPayments = ((allPayments as any)?.length || 0);
   let completedPayments = 0;
   let failedPayments = 0;
   let cancelledPayments = 0;
