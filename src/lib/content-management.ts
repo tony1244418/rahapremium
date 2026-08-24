@@ -557,12 +557,13 @@ export const subscribeToAdultSeries = (callback: (series: Series[]) => void) => 
     const { data, error } = await supabase.from('series').select('*').order('created_at', { ascending: false });
     if (!error && data) {
       const seriesList = await Promise.all(
-        data.map(async (doc) => {
-          const { count } = await supabase.from('seasons').select('*', { count: 'exact', head: true }).eq('series_id', doc.id);
-          return mapSeries(doc, count || 0);
+        (data as any).map(async (doc: any) => {
+          const { data: seasons } = await supabase.from('seasons').select('id').eq('series_id', doc.id);
+          const count = ((seasons as any) || []).length;
+          return mapSeries(doc, count);
         })
       );
-      callback(seriesList.filter(s => s.isAdult && s.isActive));
+      callback(seriesList.filter((s: any) => s.isAdult && s.isActive));
     }
   };
 
