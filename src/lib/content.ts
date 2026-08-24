@@ -377,20 +377,31 @@ export const getStoryById = async (id: string): Promise<Story | null> => {
     if (error || !story) return null;
 
     return {
-      ...story,
-      id: story.id,
-      estimatedReadTime: story.estimated_read_time,
-      thumbnailUrl: story.thumbnail_url,
-      requiredPackages: story.required_packages || [],
-      createdAt: toDate(story.created_at),
-      updatedAt: toDate(story.updated_at),
-      isActive: story.is_active,
-      isAdult: story.is_adult,
-      searchKeywords: story.search_keywords || [],
+      ...(story as any),
+      id: (story as any).id,
+      estimatedReadTime: (story as any).estimated_read_time,
+      thumbnailUrl: (story as any).thumbnail_url,
+      requiredPackages: (story as any).required_packages || [],
+      createdAt: toDate((story as any).created_at),
+      updatedAt: toDate((story as any).updated_at),
+      isActive: (story as any).is_active,
+      isAdult: (story as any).is_adult,
+      searchKeywords: (story as any).search_keywords || [],
     } as Story;
   } catch (error) {
     console.error('Error fetching story:', error);
     return null;
+  }
+};
+
+export const incrementStoryViews = async (storyId: string): Promise<void> => {
+  try {
+    const { data } = await supabase.from('stories').select('views').eq('id', storyId).single();
+    if (data) {
+      await supabase.from('stories').update({ views: ((data as any).views || 0) + 1 }).eq('id', storyId);
+    }
+  } catch (error) {
+    console.error('Error incrementing story views:', error);
   }
 };
 
