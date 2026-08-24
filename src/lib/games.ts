@@ -343,21 +343,21 @@ export const getUserGameAccesses = async (userId: string) => {
     const now = new Date();
     const validAccesses = [];
     
-    for (const access of (data || [])) {
-      const endDate = toDate(access.end_date);
+    for (const access of ((data as any) || [])) {
+      const endDate = toDate((access as any).end_date);
       if (endDate < now) {
         // Expired, mark inactive
-        await supabase.from('game_accesses').update({ is_active: false }).eq('id', access.id);
+        await supabase.from('game_accesses').update({ is_active: false }).eq('id', (access as any).id);
       } else {
         validAccesses.push({
-          id: access.id,
-          userId: access.user_id,
-          gameId: access.game_id,
-          paymentId: access.payment_id,
-          startDate: toDate(access.start_date),
+          id: (access as any).id,
+          userId: (access as any).user_id,
+          gameId: (access as any).game_id,
+          paymentId: (access as any).payment_id,
+          startDate: toDate((access as any).start_date),
           endDate: endDate,
-          isActive: access.is_active,
-          createdAt: toDate(access.created_at)
+          isActive: (access as any).is_active,
+          createdAt: toDate((access as any).created_at)
         } as GameAccess);
       }
     }
