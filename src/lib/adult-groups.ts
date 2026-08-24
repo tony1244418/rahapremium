@@ -125,10 +125,10 @@ export const getActiveAdultGroups = async (requiredPackages?: SubscriptionPackag
 
     if (error) throw error;
 
-    let groups = (data || []).map(mapGroup);
+    let groups = ((data as any) || []).map(mapGroup);
 
     if (requiredPackages && requiredPackages.length > 0) {
-      groups = groups.filter(group =>
+      groups = groups.filter((group: any) =>
         group.requiredPackages.some(pkg => requiredPackages.includes(pkg))
       );
     }
