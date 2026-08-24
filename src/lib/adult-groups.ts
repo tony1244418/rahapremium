@@ -36,7 +36,7 @@ export const addAdultGroup = async (groupData: Omit<AdultGroup, 'id' | 'createdA
     }).select('id').single();
 
     if (error) throw error;
-    return { success: true, id: data.id };
+    return { success: true, id: (data as any).id };
   } catch (error) {
     console.error('Error adding adult group:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
