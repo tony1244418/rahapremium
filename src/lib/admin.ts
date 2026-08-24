@@ -447,16 +447,20 @@ export const getAnalytics = async (): Promise<AdminAnalytics> => {
     const [
       { data: users },
       { data: payments },
-      { count: moviesCount },
-      { count: seriesCount },
-      { count: storiesCount }
+      { data: movies },
+      { data: series },
+      { data: stories }
     ] = await Promise.all([
       supabase.from('rahapremium_users').select('is_blocked, subscription, live_tv_subscription'),
       supabase.from('payments').select('amount, status, completed_at, order_id').eq('status', 'completed'),
-      supabase.from('movies').select('*', { count: 'exact', head: true }) as any,
-      supabase.from('series').select('*', { count: 'exact', head: true }) as any,
-      supabase.from('stories').select('*', { count: 'exact', head: true }) as any
+      supabase.from('movies').select('id'),
+      supabase.from('series').select('id'),
+      supabase.from('stories').select('id')
     ]);
+    
+    const moviesCount = ((movies as any) || []).length;
+    const seriesCount = ((series as any) || []).length;
+    const storiesCount = ((stories as any) || []).length;
 
     // Count users with EITHER an active normal OR an active Live TV subscription.
     const activeSubscriptions = ((users as any) || []).filter((user: any) => {
@@ -473,7 +477,8 @@ export const getAnalytics = async (): Promise<AdminAnalytics> => {
       .filter((p: any) => p.completed_at && p.completed_at >= startOfMonth && !(p.order_id && p.order_id.toLowerCase().startsWith('manual')))
       .reduce((sum: number, p: any) => sum + p.amount, 0);
 
-    const { count: pendingPayments } = await supabase.from('payments').select('*', { count: 'exact', head: true }) as any;
+    const { data: pendingPaymentsData } = await supabase.from('payments').select('id').eq('status', 'pending');
+    const pendingPayments = ((pendingPaymentsData as any) || []).length;
 
     return {
       totalUsers: users?.length || 0,
