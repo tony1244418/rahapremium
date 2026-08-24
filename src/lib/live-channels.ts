@@ -193,7 +193,7 @@ export const getLiveChannels = async (activeOnly: boolean = false, includeAdult:
 
     const { data, error } = await query;
     if (error) throw error;
-    return { success: true, data: (data || []).map(mapChannel) };
+    return { success: true, data: ((data as any) || []).map(mapChannel) };
   } catch (error) {
     console.error('Error getting live channels:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error', data: [] };
@@ -204,7 +204,7 @@ export const getLiveChannelById = async (channelId: string) => {
   try {
     const { data, error } = await supabase.from('live_channels').select('*').eq('id', channelId).single();
     if (error || !data) return { success: false, error: 'Channel not found' };
-    return { success: true, data: mapChannel(data) };
+    return { success: true, data: mapChannel(data as any) };
   } catch (error) {
     console.error('Error getting live channel:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
