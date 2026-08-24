@@ -348,7 +348,7 @@ export const getStories = async (): Promise<Story[]> => {
 
     if (error) throw error;
 
-    return (data || []).map(story => ({
+    return ((data as any) || []).map((story: any) => ({
       ...story,
       id: story.id,
       estimatedReadTime: story.estimated_read_time,
