@@ -131,7 +131,7 @@ export const getActiveSubUserByPhone = async (phoneNumber: string): Promise<User
     for (const phone of formats) {
       const { data } = await supabase.from('rahapremium_users').select('*').eq('phone_number', phone);
       if (data) {
-        for (const userDoc of data) {
+        for (const userDoc of (data as any)) {
           if (userDoc.subscription?.isActive) {
             return mapUserFromDB(userDoc);
           }
