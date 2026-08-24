@@ -266,11 +266,11 @@ export const getSeriesById = async (id: string): Promise<Series | null> => {
     const seasons = (series.seasons || []).map((season: any) => {
       const episodes = (season.episodes || []).map((episode: any) => ({
         ...episode,
-        id: episode.id,
-        seriesId: episode.series_id,
-        seasonId: episode.season_id,
-        episodeNumber: episode.episode_number,
-        videoUrl: episode.video_url,
+        id: (episode as any).id,
+        seriesId: (episode as any).series_id,
+        seasonId: (episode as any).season_id,
+        episodeNumber: (episode as any).episode_number,
+        videoUrl: (episode as any).video_url,
         downloadUrl: episode.download_url,
         googleDriveUrl: episode.google_drive_url,
         thumbnailUrl: episode.thumbnail_url,

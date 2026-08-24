@@ -99,11 +99,11 @@ const mapSeason = (data: any): Season => ({
 });
 
 const mapEpisode = (data: any): Episode => ({
-  id: data.id,
-  seriesId: data.series_id,
-  seasonId: data.season_id,
-  episodeNumber: data.episode_number,
-  title: data.title,
+  id: (data as any).id,
+  seriesId: (data as any).series_id,
+  seasonId: (data as any).season_id,
+  episodeNumber: (data as any).episode_number,
+  title: (data as any).title,
   description: data.description,
   videoUrl: data.video_url,
   downloadUrl: data.download_url,
@@ -932,7 +932,7 @@ export const deleteEpisode = async (episodeId: string) => {
     const { error } = await supabase.from('episodes').delete().eq('id', episodeId);
     if (error) throw error;
 
-    if (episode?.season_id) {
+    if ((episode as any)?.season_id) {
       const { data: season } = await supabase.from('seasons').select('total_episodes').eq('id', (episode as any).season_id).single();
       if (season) {
         await supabase.from('seasons').update({ total_episodes: Math.max(0, ((season as any).total_episodes || 0) - 1) }).eq('id', (episode as any).season_id);
