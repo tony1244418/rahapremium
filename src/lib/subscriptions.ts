@@ -747,8 +747,8 @@ export const completePayment = async (
     const { data: paymentDoc, error } = await supabase.from('payments').select('*').eq('id', paymentId).single();
     if (error || !paymentDoc) throw new Error('Payment not found');
 
-    const paymentType = paymentDoc.payment_type || 'subscription';
-    const userId = user?.uid || paymentDoc.user_id;
+    const paymentType = (paymentDoc as any).payment_type || 'subscription';
+    const userId = user?.uid || (paymentDoc as any).user_id;
 
     // Update payment record — Firestore rejects `undefined` field values, use null instead.
     await supabase.from('payments').update({
@@ -768,7 +768,7 @@ export const completePayment = async (
 
     if (paymentType === 'game' && userId) {
       const { grantGameAccess } = await import('./games');
-      const result = await grantGameAccess(userId, paymentDoc.game_id, 3, paymentId);
+      const result = await grantGameAccess(userId, (paymentDoc as any).game_id, 3, paymentId);
       if (!result.success) throw new Error('Failed to grant game access');
     } else if (paymentType === 'content' && userId) {
       // Fetch fresh content_accesses from DB to avoid overwriting with stale client-side state
@@ -777,30 +777,30 @@ export const completePayment = async (
         .select('content_accesses')
         .eq('id', userId)
         .single();
-      const currentAccesses: string[] = freshUserData?.content_accesses || [];
+      const currentAccesses: string[] = (freshUserData as any)?.content_accesses || [];
       // Only add if not already present (idempotent)
-      if (!currentAccesses.includes(paymentDoc.content_id)) {
-        currentAccesses.push(paymentDoc.content_id);
+      if (!currentAccesses.includes((paymentDoc as any).content_id)) {
+        currentAccesses.push((paymentDoc as any).content_id);
       }
       await supabase.from('rahapremium_users').update({ content_accesses: currentAccesses }).eq('id', userId);
     } else if (paymentType === 'subscription') {
-      const category: PackageCategory = (paymentDoc.package_category === 'LIVETV') ? 'LIVETV' : 'GENERAL';
+      const category: PackageCategory = ((paymentDoc as any).package_category === 'LIVETV') ? 'LIVETV' : 'GENERAL';
       if (user) {
-        await processSubscription(user, paymentDoc.package_type, paymentId, isManual, completedBy, undefined, category);
+        await processSubscription(user, (paymentDoc as any).package_type, paymentId, isManual, completedBy, undefined, category);
       } else {
         // Fetch user and process subscription
         const { data: userData } = await supabase.from('rahapremium_users').select('*').eq('id', userId).single();
         if (userData) {
           // Build a minimal user object for processSubscription (both categories)
           const minUser = {
-            uid: userData.id,
-            paymentHistory: userData.payment_history || [],
-            subscription: userData.subscription,
-            subscriptionHistory: userData.subscription_history || [],
-            liveTvSubscription: userData.live_tv_subscription,
-            liveTvSubscriptionHistory: userData.live_tv_subscription_history || []
+            uid: (userData as any).id,
+            paymentHistory: (userData as any).payment_history || [],
+            subscription: (userData as any).subscription,
+            subscriptionHistory: (userData as any).subscription_history || [],
+            liveTvSubscription: (userData as any).live_tv_subscription,
+            liveTvSubscriptionHistory: (userData as any).live_tv_subscription_history || []
           } as unknown as User;
-          await processSubscription(minUser, paymentDoc.package_type, paymentId, isManual, completedBy, undefined, category);
+          await processSubscription(minUser, (paymentDoc as any).package_type, paymentId, isManual, completedBy, undefined, category);
         }
       }
     }
