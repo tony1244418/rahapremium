@@ -301,23 +301,23 @@ export const getSeriesById = async (id: string): Promise<Series | null> => {
     }).sort((a: any, b: any) => a.seasonNumber - b.seasonNumber);
 
     return {
-      ...series,
-      id: series.id,
-      thumbnailUrl: series.thumbnail_url,
-      totalSeasons: series.total_seasons,
-      requiredPackages: series.required_packages || [],
-      createdAt: toDate(series.created_at),
-      updatedAt: toDate(series.updated_at),
-      isActive: series.is_active,
-      isAdult: series.is_adult,
-      adultCategory: series.adult_category,
-      cast: series.cast_list || [],
-      searchKeywords: series.search_keywords || [],
-      contentPurchaseEnabled: series.content_purchase_enabled,
-      contentPrice: series.content_price,
-      contentPriceDays: series.content_price_days,
-      contentPurchasePackages: series.content_purchase_packages || [],
-      videoEmbedCode: series.video_embed_code,
+      ...(series as any),
+      id: (series as any).id,
+      thumbnailUrl: (series as any).thumbnail_url,
+      totalSeasons: (series as any).total_seasons,
+      requiredPackages: (series as any).required_packages || [],
+      createdAt: toDate((series as any).created_at),
+      updatedAt: toDate((series as any).updated_at),
+      isActive: (series as any).is_active,
+      isAdult: (series as any).is_adult,
+      adultCategory: (series as any).adult_category,
+      cast: (series as any).cast_list || [],
+      searchKeywords: (series as any).search_keywords || [],
+      contentPurchaseEnabled: (series as any).content_purchase_enabled,
+      contentPrice: (series as any).content_price,
+      contentPriceDays: (series as any).content_price_days,
+      contentPurchasePackages: (series as any).content_purchase_packages || [],
+      videoEmbedCode: (series as any).video_embed_code,
       seasons
     } as Series;
   } catch (error) {
@@ -330,7 +330,7 @@ export const incrementSeriesViews = async (seriesId: string): Promise<void> => {
   try {
     const { data } = await supabase.from('series').select('views').eq('id', seriesId).single();
     if (data) {
-      await supabase.from('series').update({ views: (data.views || 0) + 1 }).eq('id', seriesId);
+      await supabase.from('series').update({ views: ((data as any).views || 0) + 1 }).eq('id', seriesId);
     }
   } catch (error) {
     console.error('Error incrementing series views:', error);
