@@ -690,18 +690,18 @@ export const getContentStats = async () => {
       supabase.from('stories').select('is_active')
     ]);
 
-    const movies = moviesRes.data || [];
-    const series = seriesRes.data || [];
-    const stories = storiesRes.data || [];
+    const movies = (moviesRes.data as any) || [];
+    const series = (seriesRes.data as any) || [];
+    const stories = (storiesRes.data as any) || [];
 
     const totalMovies = movies.length;
     const totalSeries = series.length;
     const totalStories = stories.length;
     const totalContent = totalMovies + totalSeries + totalStories;
 
-    const activeMovies = movies.filter(m => m.is_active).length;
-    const activeSeries = series.filter(s => s.is_active).length;
-    const activeStories = stories.filter(s => s.is_active).length;
+    const activeMovies = movies.filter((m: any) => m.is_active).length;
+    const activeSeries = series.filter((s: any) => s.is_active).length;
+    const activeStories = stories.filter((s: any) => s.is_active).length;
     const activeContent = activeMovies + activeSeries + activeStories;
 
     return {
