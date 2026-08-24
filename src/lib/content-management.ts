@@ -357,7 +357,7 @@ export const getAllMovies = async () => {
     ]);
     if (error) throw error;
 
-    const movies = applyMovieOrder(data.map(mapMovie), orders);
+    const movies = applyMovieOrder((data as any).map(mapMovie), orders);
     return { success: true, data: movies };
   } catch (error) {
     console.error('Error getting all movies:', error);
@@ -393,7 +393,7 @@ export const subscribeToAdultMovies = (callback: (movies: Movie[]) => void) => {
   const fetchAndCallback = async () => {
     const { data, error } = await supabase.from('movies').select('*').order('created_at', { ascending: false });
     if (!error && data) {
-      const movies = data.map(mapMovie).filter(m => m.isAdult && m.isActive);
+      const movies = (data as any).map(mapMovie).filter((m: any) => m.isAdult && m.isActive);
       callback(movies);
     }
   };
@@ -517,13 +517,14 @@ export const getSeries = async () => {
     if (error) throw error;
 
     const seriesList = await Promise.all(
-      data.map(async (doc) => {
-        const { count } = await supabase.from('seasons').select('*', { count: 'exact', head: true }).eq('series_id', doc.id);
+      (data as any).map(async (doc: any) => {
+        const res = await supabase.from('seasons').select('*', { count: 'exact', head: true }) as any;
+        const count = res.count;
         return mapSeries(doc, count || 0);
       })
     );
 
-    return { success: true, data: seriesList.filter(s => !s.isAdult) };
+    return { success: true, data: seriesList.filter((s: any) => !s.isAdult) };
   } catch (error) {
     console.error('Error getting series:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error', data: [] };
@@ -650,8 +651,8 @@ export const getStories = async () => {
     const { data, error } = await supabase.from('stories').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     
-    const stories = data.map(mapStory);
-    return { success: true, data: stories.filter(s => !s.isAdult) };
+    const stories = (data as any).map(mapStory);
+    return { success: true, data: stories.filter((s: any) => !s.isAdult) };
   } catch (error) {
     console.error('Error getting stories:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error', data: [] };
@@ -821,8 +822,8 @@ export const getSeasonsBySeries = async (seriesId: string) => {
     const { data, error } = await supabase.from('seasons').select('*').eq('series_id', seriesId);
     if (error) throw error;
     
-    const seasons = data.map(mapSeason);
-    seasons.sort((a, b) => a.seasonNumber - b.seasonNumber);
+    const seasons = (data as any).map(mapSeason);
+    seasons.sort((a: any, b: any) => a.seasonNumber - b.seasonNumber);
     return { success: true, data: seasons };
   } catch (error) {
     console.error('Error getting seasons:', error);
@@ -949,8 +950,8 @@ export const getEpisodesBySeason = async (seasonId: string) => {
     const { data, error } = await supabase.from('episodes').select('*').eq('season_id', seasonId);
     if (error) throw error;
     
-    const episodes = data.map(mapEpisode);
-    episodes.sort((a, b) => a.episodeNumber - b.episodeNumber);
+    const episodes = (data as any).map(mapEpisode);
+    episodes.sort((a: any, b: any) => a.episodeNumber - b.episodeNumber);
     return { success: true, data: episodes };
   } catch (error) {
     console.error('Error getting episodes:', error);
