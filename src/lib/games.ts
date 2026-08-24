@@ -373,7 +373,7 @@ export const incrementGameViews = async (gameId: string) => {
   try {
     const { data: game } = await supabase.from('games').select('views').eq('id', gameId).single();
     if (game) {
-      await supabase.from('games').update({ views: (game.views || 0) + 1 }).eq('id', gameId);
+      await supabase.from('games').update({ views: ((game as any).views || 0) + 1 }).eq('id', gameId);
     }
   } catch (error) {
     console.error('Error incrementing views:', error);
