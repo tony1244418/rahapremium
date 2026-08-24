@@ -114,6 +114,7 @@ export const getGames = async (includeAdult: boolean = false) => {
       mode: game.mode || 'Original',
       rating: game.rating,
       views: game.views,
+      language: game.language,
       createdAt: toDate(game.created_at),
       updatedAt: toDate(game.updated_at),
     })) as Game[];
@@ -157,6 +158,7 @@ export const getActiveGames = async (includeAdult: boolean = false) => {
       mode: game.mode || 'Original',
       rating: game.rating,
       views: game.views,
+      language: game.language,
       createdAt: toDate(game.created_at),
       updatedAt: toDate(game.updated_at),
     })) as Game[];
@@ -199,6 +201,7 @@ export const getGameById = async (gameId: string) => {
         mode: game.mode || 'Original',
         rating: game.rating,
         views: game.views,
+        language: game.language,
         createdAt: toDate(game.created_at),
         updatedAt: toDate(game.updated_at),
       } as Game 
