@@ -139,7 +139,7 @@ export const updateLiveChannel = async (channelId: string, channelData: Partial<
         updateData.search_keywords = Array.from(kw);
       } else {
         const { data: curr } = await supabase.from('live_channels').select('search_keywords').eq('id', channelId).single();
-        const kw = new Set(curr?.search_keywords || []);
+        const kw = new Set((curr as any)?.search_keywords || []);
         if (channelData.showInSlider) kw.add('__slider__');
         else kw.delete('__slider__');
         updateData.search_keywords = Array.from(kw);
