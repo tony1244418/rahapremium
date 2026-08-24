@@ -301,7 +301,7 @@ export const addDirectSubscription = async (
 
     if (updateError) {
       console.error('Supabase update error in addDirectSubscription:', updateError);
-      throw new Error(`Failed to update user subscription: ${updateError.message}`);
+      throw new Error(`Failed to update user subscription: ${(updateError as any).message}`);
     }
 
     console.log(`✅ Manual ${category} subscription added for user ${userId}: ${packageType} until ${endDate.toISOString()}`);
