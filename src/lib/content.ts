@@ -66,7 +66,7 @@ export const getMovies = async (isAdult: boolean = false, requiredPackages?: Sub
 
     if (error) throw error;
 
-    const mapped = (data || []).map(movie => ({
+    const mapped = ((data as any) || []).map((movie: any) => ({
       ...movie,
       id: movie.id,
       title: movie.title,
