@@ -518,9 +518,9 @@ export const getSeries = async () => {
 
     const seriesList = await Promise.all(
       (data as any).map(async (doc: any) => {
-        const res = await supabase.from('seasons').select('*', { count: 'exact', head: true }) as any;
-        const count = res.count;
-        return mapSeries(doc, count || 0);
+        const { data: seasons } = await supabase.from('seasons').select('id').eq('series_id', doc.id);
+        const count = ((seasons as any) || []).length;
+        return mapSeries(doc, count);
       })
     );
 
