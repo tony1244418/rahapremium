@@ -116,35 +116,35 @@ export const getMovieById = async (id: string): Promise<Movie | null> => {
     if (error || !movie) return null;
 
     return {
-      ...movie,
-      id: movie.id,
-      title: movie.title,
-      description: movie.description,
-      videoUrl: movie.video_url,
-      downloadUrl: movie.download_url,
-      googleDriveUrl: movie.google_drive_url,
-      thumbnailUrl: movie.thumbnail_url,
-      duration: movie.duration,
-      releaseDate: toDate(movie.release_date),
-      genre: movie.genre || [],
-      language: movie.language,
-      quality: movie.quality || [],
-      requiredPackages: movie.required_packages || [],
-      createdAt: toDate(movie.created_at),
-      updatedAt: toDate(movie.updated_at),
-      views: movie.views,
-      isActive: movie.is_active,
-      isAdult: movie.is_adult,
-      adultCategory: movie.adult_category,
-      rating: movie.rating,
-      cast: movie.cast_list || [],
-      director: movie.director,
-      searchKeywords: movie.search_keywords || [],
-      contentPurchaseEnabled: movie.content_purchase_enabled,
-      contentPrice: movie.content_price,
-      contentPriceDays: movie.content_price_days,
-      contentPurchasePackages: movie.content_purchase_packages || [],
-      videoEmbedCode: movie.video_embed_code,
+      ...(movie as any),
+      id: (movie as any).id,
+      title: (movie as any).title,
+      description: (movie as any).description,
+      videoUrl: (movie as any).video_url,
+      downloadUrl: (movie as any).download_url,
+      googleDriveUrl: (movie as any).google_drive_url,
+      thumbnailUrl: (movie as any).thumbnail_url,
+      duration: (movie as any).duration,
+      releaseDate: toDate((movie as any).release_date),
+      genre: (movie as any).genre || [],
+      language: (movie as any).language,
+      quality: (movie as any).quality || [],
+      requiredPackages: (movie as any).required_packages || [],
+      createdAt: toDate((movie as any).created_at),
+      updatedAt: toDate((movie as any).updated_at),
+      views: (movie as any).views,
+      isActive: (movie as any).is_active,
+      isAdult: (movie as any).is_adult,
+      adultCategory: (movie as any).adult_category,
+      rating: (movie as any).rating,
+      cast: (movie as any).cast_list || [],
+      director: (movie as any).director,
+      searchKeywords: (movie as any).search_keywords || [],
+      contentPurchaseEnabled: (movie as any).content_purchase_enabled,
+      contentPrice: (movie as any).content_price,
+      contentPriceDays: (movie as any).content_price_days,
+      contentPurchasePackages: (movie as any).content_purchase_packages || [],
+      videoEmbedCode: (movie as any).video_embed_code,
     } as Movie;
   } catch (error) {
     console.error('Error fetching movie:', error);
@@ -157,7 +157,7 @@ export const incrementMovieViews = async (movieId: string): Promise<void> => {
     // We fetch current then add, or we could use an RPC
     const { data } = await supabase.from('movies').select('views').eq('id', movieId).single();
     if (data) {
-      await supabase.from('movies').update({ views: (data.views || 0) + 1 }).eq('id', movieId);
+      await supabase.from('movies').update({ views: ((data as any).views || 0) + 1 }).eq('id', movieId);
     }
   } catch (error) {
     console.error('Error incrementing movie views:', error);
