@@ -263,8 +263,8 @@ export const getSeriesById = async (id: string): Promise<Series | null> => {
 
     if (error || !series) return null;
 
-    const seasons = (series.seasons || []).map((season: any) => {
-      const episodes = (season.episodes || []).map((episode: any) => ({
+    const seasons = (((series as any).seasons as any) || []).map((season: any) => {
+      const episodes = ((season.episodes as any) || []).map((episode: any) => ({
         ...episode,
         id: (episode as any).id,
         seriesId: (episode as any).series_id,
