@@ -33,7 +33,7 @@ export const addGame = async (gameData: Omit<Game, 'id' | 'createdAt' | 'updated
     }).select().single();
 
     if (error) throw error;
-    return { success: true, id: data.id };
+    return { success: true, id: (data as any).id };
   } catch (error) {
     console.error('Error adding game:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
