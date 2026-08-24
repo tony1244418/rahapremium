@@ -325,7 +325,7 @@ export const removeUserSubscription = async (
   const { error } = await supabase.from('rahapremium_users').update(payload).eq('id', userId);
   if (error) {
     console.error('removeUserSubscription failed:', error);
-    throw new Error(error.message || 'Failed to remove subscription');
+    throw new Error((error as any).message || 'Failed to remove subscription');
   }
 };
 
