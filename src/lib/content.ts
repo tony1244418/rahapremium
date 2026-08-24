@@ -41,8 +41,8 @@ const fetchMovieSortOrders = async (): Promise<Record<string, number>> => {
       .eq('id', 'movie_sort_orders')
       .maybeSingle();
 
-    if (data?.data) {
-      const parsed = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
+    if ((data as any)?.data) {
+      const parsed = typeof (data as any).data === 'string' ? JSON.parse((data as any).data) : (data as any).data;
       return parsed.orders || {};
     }
     return {};
