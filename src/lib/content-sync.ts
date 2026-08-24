@@ -146,7 +146,7 @@ interface SyncCollectionResult { checked: number; updated: number; }
 const syncMovies = async (): Promise<SyncCollectionResult> => {
   const { data: rows } = await supabase.from('mods').select('id, title, description, director, language, genre, cast, required_packages, search_keywords, synced_at').eq('type', 'movie');
   let updated = 0;
-  for (const row of rows || []) {
+  for (const row of ((rows as any) || [])) {
     const keywords = keywordSetFromParts([row.title, row.description, row.director, row.language, row.genre, row.cast, row.required_packages]);
     const existing = Array.isArray(row.search_keywords) ? [...row.search_keywords].sort() : [];
     if (!arraysEqual(keywords, existing) || !row.synced_at) {
@@ -160,7 +160,7 @@ const syncMovies = async (): Promise<SyncCollectionResult> => {
 const syncSeries = async (): Promise<SyncCollectionResult> => {
   const { data: rows } = await supabase.from('series').select('id, title, description, language, genre, cast, required_packages, search_keywords, synced_at');
   let updated = 0;
-  for (const row of rows || []) {
+  for (const row of ((rows as any) || [])) {
     const keywords = keywordSetFromParts([row.title, row.description, row.language, row.genre, row.cast, row.required_packages]);
     const existing = Array.isArray(row.search_keywords) ? [...row.search_keywords].sort() : [];
     if (!arraysEqual(keywords, existing) || !row.synced_at) {
@@ -176,7 +176,7 @@ const syncStories = async (): Promise<SyncCollectionResult> => {
   try {
     const { data: rows } = await supabase.from('stories').select('id, title, content, author, language, genre, required_packages, search_keywords, synced_at');
     let updated = 0;
-    for (const row of rows || []) {
+    for (const row of ((rows as any) || [])) {
       const keywords = keywordSetFromParts([row.title, row.content, row.author, row.language, row.genre, row.required_packages]);
       const existing = Array.isArray(row.search_keywords) ? [...row.search_keywords].sort() : [];
       if (!arraysEqual(keywords, existing) || !row.synced_at) {
