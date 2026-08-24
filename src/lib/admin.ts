@@ -184,7 +184,7 @@ export const addManualSubscription = async (
     const { data: paymentRef, error } = await supabase.from('payments').insert(paymentData).select().single();
     if (error) throw error;
 
-    await processSubscription(user, packageType, paymentRef.id, true, adminId);
+    await processSubscription(user, packageType, (paymentRef as any).id, true, adminId);
   } catch (error) {
     console.error('Error adding manual subscription:', error);
     throw error;
