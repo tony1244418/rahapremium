@@ -516,12 +516,12 @@ export const initiatePayment = async (
 
   const { data: docRef, error } = await supabase.from('payments').insert(paymentRequest).select().single();
   if (error) {
-    console.error('Supabase insert error:', error.code, error.message, error.details);
-    throw new Error(`Database error (${error.code}): ${error.message}`);
+    console.error('Supabase insert error:', (error as any).code, error.message, (error as any).details);
+    throw new Error(`Database error (${(error as any).code}): ${error.message}`);
   }
 
   const payment: PaymentRequest = {
-    id: docRef.id,
+    id: (docRef as any).id,
     userId: user.uid,
     packageType,
     packageCategory: category,
