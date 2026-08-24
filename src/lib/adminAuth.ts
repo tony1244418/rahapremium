@@ -55,7 +55,7 @@ export async function verifyAdminRequest(request: NextRequest): Promise<NextResp
     .eq('email', user.email)
     .single();
 
-  if (adminError || !admin || admin.is_active === false) {
+  if (adminError || !admin || (admin as any).is_active === false) {
     return NextResponse.json(
       { error: 'Unauthorized: not an active administrator' },
       { status: 401 }
