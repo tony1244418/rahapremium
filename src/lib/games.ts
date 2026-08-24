@@ -258,12 +258,12 @@ export const checkGameAccess = async (userId: string, gameId: string) => {
       return { success: true, hasAccess: false, reason: 'No active access found' };
     }
 
-    const endDate = toDate(gameAccess.end_date);
+    const endDate = toDate((gameAccess as any).end_date);
     const now = new Date();
 
     if (endDate < now) {
       // Access expired, update it
-      await supabase.from('game_accesses').update({ is_active: false }).eq('id', gameAccess.id);
+      await supabase.from('game_accesses').update({ is_active: false }).eq('id', (gameAccess as any).id);
       return { success: true, hasAccess: false, reason: 'Access expired', expiredAt: endDate };
     }
 
