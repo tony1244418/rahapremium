@@ -84,7 +84,7 @@ export const getAdultGroups = async () => {
 
     if (error) throw error;
 
-    const groups = (data || []).map(mapGroup);
+    const groups = ((data as any) || []).map(mapGroup);
     groups.sort((a, b) => {
       if (a.order !== b.order) return a.order - b.order;
       return b.createdAt.getTime() - a.createdAt.getTime();
