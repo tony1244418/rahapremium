@@ -641,7 +641,7 @@ export const getDetailedAnalytics = async (): Promise<DetailedAnalytics> => {
   let newUsersThisWeek = 0;
   let newUsersThisMonth = 0;
 
-  allUsers.forEach(user => {
+  ((allUsers as any) || []).forEach((user: any) => {
     if (user.created_at) {
       const createdDate = new Date(user.created_at);
       if (createdDate >= todayStart) newUsersToday++;
@@ -673,7 +673,7 @@ export const getDetailedAnalytics = async (): Promise<DetailedAnalytics> => {
   });
 
   // Process payments
-  allPayments.forEach(payment => {
+  ((allPayments as any) || []).forEach((payment: any) => {
     const isCompleted = payment.status === 'completed' || payment.status === 'SUCCESS';
     const isFailed = payment.status === 'failed' || payment.status === 'FAILED';
     const isCancelled = payment.status === 'cancelled';
