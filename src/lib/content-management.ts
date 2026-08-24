@@ -152,8 +152,8 @@ export const getMovieSortOrders = async (): Promise<Record<string, number>> => {
       .eq('id', MOVIE_ORDER_KEY)
       .maybeSingle();
       
-    if (data?.data) {
-      const parsed = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
+    if ((data as any)?.data) {
+      const parsed = typeof (data as any).data === 'string' ? JSON.parse((data as any).data) : (data as any).data;
       return parsed.orders || {};
     }
     return {};
