@@ -93,7 +93,7 @@ export const getGames = async (includeAdult: boolean = false) => {
     const { data, error } = await query;
     if (error) throw error;
 
-    const games = (data || []).map(game => ({
+    const games = ((data as any) || []).map((game: any) => ({
       ...game,
       id: game.id,
       title: game.title,
@@ -136,7 +136,7 @@ export const getActiveGames = async (includeAdult: boolean = false) => {
     const { data, error } = await query;
     if (error) throw error;
 
-    const games = (data || []).map(game => ({
+    const games = ((data as any) || []).map((game: any) => ({
       ...game,
       id: game.id,
       title: game.title,
