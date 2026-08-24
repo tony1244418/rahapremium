@@ -211,11 +211,11 @@ export const getSeries = async (isAdult: boolean = false, requiredPackages?: Sub
           seasonNumber: season.season_number,
           videoUrl: season.video_url,
           downloadUrl: season.download_url,
-          googleDriveUrl: season.google_drive_url,
-          thumbnailUrl: season.thumbnail_url,
-          totalEpisodes: season.total_episodes,
-          createdAt: toDate(season.created_at),
-          updatedAt: toDate(season.updated_at),
+          googleDriveUrl: (season as any).google_drive_url,
+          thumbnailUrl: (season as any).thumbnail_url,
+          totalEpisodes: (season as any).total_episodes,
+          createdAt: toDate((season as any).created_at),
+          updatedAt: toDate((season as any).updated_at),
           episodes
         };
       }).sort((a: any, b: any) => a.seasonNumber - b.seasonNumber);

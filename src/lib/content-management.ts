@@ -90,11 +90,11 @@ const mapSeason = (data: any): Season => ({
   description: data.description,
   videoUrl: data.video_url,
   downloadUrl: data.download_url,
-  googleDriveUrl: data.google_drive_url,
-  thumbnailUrl: data.thumbnail_url,
-  totalEpisodes: data.total_episodes || 0,
+  googleDriveUrl: (data as any).google_drive_url,
+  thumbnailUrl: (data as any).thumbnail_url,
+  totalEpisodes: (data as any).total_episodes || 0,
   episodes: [],
-  createdAt: data.created_at ? new Date(data.created_at) : new Date(0),
+  createdAt: (data as any).created_at ? new Date((data as any).created_at) : new Date(0),
   updatedAt: data.updated_at ? new Date(data.updated_at) : new Date(0)
 });
 
@@ -886,7 +886,7 @@ export const addEpisode = async (episodeData: Omit<Episode, 'id' | 'createdAt' |
     // Update season episodes count
     const { data: season } = await supabase.from('seasons').select('total_episodes').eq('id', episodeData.seasonId).single();
     if (season) {
-      await supabase.from('seasons').update({ total_episodes: (season.total_episodes || 0) + 1 }).eq('id', episodeData.seasonId);
+      await supabase.from('seasons').update({ total_episodes: ((season as any).total_episodes || 0) + 1 }).eq('id', episodeData.seasonId);
     }
 
     return { success: true, id };
@@ -933,9 +933,9 @@ export const deleteEpisode = async (episodeId: string) => {
     if (error) throw error;
 
     if (episode?.season_id) {
-      const { data: season } = await supabase.from('seasons').select('total_episodes').eq('id', episode.season_id).single();
+      const { data: season } = await supabase.from('seasons').select('total_episodes').eq('id', (episode as any).season_id).single();
       if (season) {
-        await supabase.from('seasons').update({ total_episodes: Math.max(0, (season.total_episodes || 0) - 1) }).eq('id', episode.season_id);
+        await supabase.from('seasons').update({ total_episodes: Math.max(0, ((season as any).total_episodes || 0) - 1) }).eq('id', (episode as any).season_id);
       }
     }
 
