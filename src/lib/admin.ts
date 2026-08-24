@@ -82,7 +82,7 @@ export const getAllUsers = async (): Promise<User[]> => {
   try {
     const { data, error } = await supabase.from('rahapremium_users').select('*').order('created_at', { ascending: false });
     if (error) throw error;
-    return (data || []).map(mapUserFromDB);
+    return ((data as any) || []).map(mapUserFromDB);
   } catch (error) {
     console.error('Error fetching users:', error);
     return [];
@@ -105,15 +105,15 @@ export const getUserByPhoneNumber = async (phoneNumber: string): Promise<User | 
     const normalizedPhone = normalizePhoneNumber(phoneNumber);
     let { data, error } = await supabase.from('rahapremium_users').select('*').eq('phone_number', normalizedPhone).limit(1);
     
-    if (!data || data.length === 0) {
+    if (!data || (data as any).length === 0) {
       if (phoneNumber !== normalizedPhone) {
         const res = await supabase.from('rahapremium_users').select('*').eq('phone_number', phoneNumber).limit(1);
         data = res.data;
       }
     }
 
-    if (data && data.length > 0) {
-      return mapUserFromDB(data[0]);
+    if (data && (data as any).length > 0) {
+      return mapUserFromDB((data as any)[0]);
     }
     return null;
   } catch (error) {
@@ -339,7 +339,7 @@ export const createMovie = async (movieData: Omit<Movie, 'id' | 'createdAt' | 'u
     updated_at: new Date().toISOString()
   }).select('id').single();
   if (error) throw error;
-  return data.id;
+  return (data as any).id;
 };
 
 export const updateMovie = async (movieId: string, movieData: Partial<Movie>): Promise<void> => {
@@ -360,7 +360,7 @@ export const createSeries = async (seriesData: Omit<Series, 'id' | 'createdAt' |
     updated_at: new Date().toISOString()
   }).select('id').single();
   if (error) throw error;
-  return data.id;
+  return (data as any).id;
 };
 
 export const updateSeries = async (seriesId: string, seriesData: Partial<Series>): Promise<void> => {
@@ -383,7 +383,7 @@ export const createStory = async (storyData: Omit<Story, 'id' | 'createdAt' | 'u
     updated_at: new Date().toISOString()
   }).select('id').single();
   if (error) throw error;
-  return data.id;
+  return (data as any).id;
 };
 
 export const updateStory = async (storyId: string, storyData: Partial<Story>): Promise<void> => {
@@ -400,7 +400,7 @@ export const getAllPayments = async (): Promise<PaymentRequest[]> => {
   try {
     const { data, error } = await supabase.from('payments').select('*').order('created_at', { ascending: false });
     if (error) throw error;
-    return (data || []).map(mapPaymentFromDB);
+    return ((data as any) || []).map(mapPaymentFromDB);
   } catch (error) {
     console.error('Error fetching payments:', error);
     return [];
