@@ -196,7 +196,7 @@ export const getAdminToggleSettings = async (): Promise<AdminToggleSettingsWithM
       .eq('id', 'toggleControls')
       .single();
 
-    if (!data || !data.data) {
+    if (!data || !(data as any).data) {
       return {
         values: DEFAULT_ADMIN_TOGGLE_SETTINGS,
         updatedAt: null,
@@ -204,7 +204,7 @@ export const getAdminToggleSettings = async (): Promise<AdminToggleSettingsWithM
       };
     }
 
-    const toggleData = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
+    const toggleData = typeof (data as any).data === 'string' ? JSON.parse((data as any).data) : (data as any).data;
     const values = { ...DEFAULT_ADMIN_TOGGLE_SETTINGS };
 
     (Object.keys(values) as AdminToggleKey[]).forEach((key) => {
@@ -215,8 +215,8 @@ export const getAdminToggleSettings = async (): Promise<AdminToggleSettingsWithM
 
     return {
       values,
-      updatedAt: data.updated_at ? new Date(data.updated_at) : null,
-      updatedBy: data.updated_by || null
+      updatedAt: (data as any).updated_at ? new Date((data as any).updated_at) : null,
+      updatedBy: (data as any).updated_by || null
     };
   } catch (error) {
     console.error('Failed to fetch admin toggle settings:', error);
