@@ -890,7 +890,7 @@ export const checkPaymentStatus = async (orderId: string): Promise<{
   try {
     const { data, error } = await supabase.from('payments').select('*').eq('order_id', orderId).single();
     if (error) throw error;
-    return { success: true, status: data.status, paymentId: data.id };
+    return { success: true, status: (data as any).status, paymentId: (data as any).id };
   } catch (error) {
     return { success: false, error: 'Payment not found' };
   }
