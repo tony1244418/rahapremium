@@ -105,7 +105,7 @@ export const addLiveChannel = async (channelData: Omit<LiveChannel, 'id' | 'crea
     }).select('id').single();
 
     if (error) throw error;
-    return { success: true, id: data.id };
+    return { success: true, id: (data as any).id };
   } catch (error) {
     console.error('Error adding live channel:', error);
     return { success: false, error: error instanceof Error ? error.message : JSON.stringify(error) };
