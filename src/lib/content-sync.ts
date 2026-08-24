@@ -168,7 +168,7 @@ const syncSeries = async (): Promise<SyncCollectionResult> => {
       updated++;
     }
   }
-  return { checked: (rows || []).length, updated };
+  return { checked: ((rows as any) || []).length, updated };
 };
 
 const syncStories = async (): Promise<SyncCollectionResult> => {
