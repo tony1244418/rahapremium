@@ -891,7 +891,7 @@ export const incrementEpisodeViews = async (episodeId: string): Promise<void> =>
   try {
     const { data: ep } = await supabase.from('episodes').select('views').eq('id', episodeId).single();
     if (ep) {
-      await supabase.from('episodes').update({ views: (ep.views || 0) + 1 }).eq('id', episodeId);
+      await supabase.from('episodes').update({ views: ((ep as any).views || 0) + 1 }).eq('id', episodeId);
     }
   } catch (error) {
     console.error('Error incrementing episode views:', error);
