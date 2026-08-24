@@ -315,7 +315,7 @@ export const recordGamePlay = async (userId: string, gameId: string) => {
   try {
     const { data: game, error } = await supabase.from('games').select('views').eq('id', gameId).single();
     if (game && !error) {
-      await supabase.from('games').update({ views: (game.views || 0) + 1 }).eq('id', gameId);
+      await supabase.from('games').update({ views: ((game as any).views || 0) + 1 }).eq('id', gameId);
     }
     
     // Also record it in user's recently played if we want (not strictly required by current schema)
