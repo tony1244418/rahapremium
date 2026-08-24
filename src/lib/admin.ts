@@ -763,7 +763,7 @@ export const getDetailedAnalytics = async (): Promise<DetailedAnalytics> => {
     ]);
     const titleMap = new Map<string, string>();
     [movies.data, series.data, stories.data, episodes.data].forEach(rows => {
-      (rows || []).forEach((r: { id: string; title: string }) => {
+      ((rows as any) || []).forEach((r: { id: string; title: string }) => {
         if (r.id && r.title) titleMap.set(r.id, r.title);
       });
     });
