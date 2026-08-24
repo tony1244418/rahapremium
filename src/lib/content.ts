@@ -182,9 +182,9 @@ export const getSeries = async (isAdult: boolean = false, requiredPackages?: Sub
 
     if (error) throw error;
 
-    return (seriesList || []).map((series: any) => {
-      const seasons = (series.seasons || []).map((season: any) => {
-        const episodes = (season.episodes || []).map((episode: any) => ({
+    return ((seriesList as any) || []).map((series: any) => {
+      const seasons = ((series.seasons as any) || []).map((season: any) => {
+        const episodes = ((season.episodes as any) || []).map((episode: any) => ({
           ...episode,
           id: (episode as any).id,
           seriesId: (episode as any).series_id,
