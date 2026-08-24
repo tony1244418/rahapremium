@@ -453,9 +453,9 @@ export const getAnalytics = async (): Promise<AdminAnalytics> => {
     ] = await Promise.all([
       supabase.from('rahapremium_users').select('is_blocked, subscription, live_tv_subscription'),
       supabase.from('payments').select('amount, status, completed_at, order_id').eq('status', 'completed'),
-      supabase.from('movies').select('*', { count: 'exact', head: true }),
-      supabase.from('series').select('*', { count: 'exact', head: true }),
-      supabase.from('stories').select('*', { count: 'exact', head: true })
+      supabase.from('movies').select('*', { count: 'exact' }),
+      supabase.from('series').select('*', { count: 'exact' }),
+      supabase.from('stories').select('*', { count: 'exact' })
     ]);
     
     const moviesCount = (moviesResult as any).count;
@@ -477,7 +477,7 @@ export const getAnalytics = async (): Promise<AdminAnalytics> => {
       .filter((p: any) => p.completed_at && p.completed_at >= startOfMonth && !(p.order_id && p.order_id.toLowerCase().startsWith('manual')))
       .reduce((sum: number, p: any) => sum + p.amount, 0);
 
-    const pendingResult = await supabase.from('payments').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+    const pendingResult = await supabase.from('payments').select('*', { count: 'exact' }).eq('status', 'pending');
     const pendingPayments = (pendingResult as any).count;
 
     return {
