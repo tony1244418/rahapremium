@@ -237,7 +237,7 @@ export const getLiveChannelsByCategory = async (category: string, activeOnly: bo
   try {
     const result = await getLiveChannels(activeOnly, includeAdult);
     if (!result.success) return result;
-    const filtered = (result.data || []).filter(ch =>
+    const filtered = (result.data || []).filter((ch: any) =>
       Array.isArray(ch.category) && ch.category.includes(category as any)
     );
     return { success: true, data: filtered };
