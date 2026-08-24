@@ -481,7 +481,7 @@ export const getAnalytics = async (): Promise<AdminAnalytics> => {
     const pendingPayments = ((pendingPaymentsData as any) || []).length;
 
     return {
-      totalUsers: users?.length || 0,
+      totalUsers: ((users as any)?.length || 0),
       activeSubscriptions,
       totalRevenue,
       monthlyRevenue,
