@@ -271,14 +271,14 @@ export const checkGameAccess = async (userId: string, gameId: string) => {
       success: true, 
       hasAccess: true, 
       access: {
-        id: gameAccess.id,
-        userId: gameAccess.user_id,
-        gameId: gameAccess.game_id,
-        paymentId: gameAccess.payment_id,
-        startDate: toDate(gameAccess.start_date),
+        id: (gameAccess as any).id,
+        userId: (gameAccess as any).user_id,
+        gameId: (gameAccess as any).game_id,
+        paymentId: (gameAccess as any).payment_id,
+        startDate: toDate((gameAccess as any).start_date),
         endDate: endDate,
-        isActive: gameAccess.is_active,
-        createdAt: toDate(gameAccess.created_at)
+        isActive: (gameAccess as any).is_active,
+        createdAt: toDate((gameAccess as any).created_at)
       } as GameAccess 
     };
   } catch (error) {
