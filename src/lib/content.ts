@@ -405,17 +405,6 @@ export const incrementStoryViews = async (storyId: string): Promise<void> => {
   }
 };
 
-export const incrementStoryViews = async (storyId: string): Promise<void> => {
-  try {
-    const { data } = await supabase.from('stories').select('views').eq('id', storyId).single();
-    if (data) {
-      await supabase.from('stories').update({ views: (data.views || 0) + 1 }).eq('id', storyId);
-    }
-  } catch (error) {
-    console.error('Error incrementing story views:', error);
-  }
-};
-
 // Subscriptions
 export const subscribeToMovies = (callback: (movies: Movie[]) => void, isAdult: boolean = false) => {
   // Using polling for now since Realtime setup might be overkill for content lists
