@@ -238,7 +238,7 @@ export const checkGameAccess = async (userId: string, gameId: string) => {
     
     // Check if the user is an admin (we can skip this check here if the UI handles it, but let's query the DB)
     const { data: userData } = await supabase.from('rahapremium_users').select('role').eq('id', userId).single();
-    if (userData && userData.role === 'admin') {
+    if (userData && (userData as any).role === 'admin') {
       return { success: true, hasAccess: true, adminOverride: true };
     }
 
