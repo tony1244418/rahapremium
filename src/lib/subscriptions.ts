@@ -839,7 +839,7 @@ export const getPendingPayments = async (userId: string): Promise<PaymentRequest
 
     if (error) throw error;
     
-    return (data || []).map(p => ({
+    return ((data as any) || []).map((p: any) => ({
       id: p.id,
       userId: p.user_id,
       packageType: p.package_type,
