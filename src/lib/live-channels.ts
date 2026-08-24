@@ -254,8 +254,8 @@ export const incrementChannelViewer = async (channelId: string) => {
     const { data: ch } = await supabase.from('live_channels').select('viewer_count, total_views').eq('id', channelId).single();
     if (ch) {
       await supabase.from('live_channels').update({
-        viewer_count: (ch.viewer_count || 0) + 1,
-        total_views: (ch.total_views || 0) + 1,
+        viewer_count: ((ch as any).viewer_count || 0) + 1,
+        total_views: ((ch as any).total_views || 0) + 1,
         updated_at: new Date().toISOString(),
       }).eq('id', channelId);
     }
@@ -269,9 +269,9 @@ export const incrementChannelViewer = async (channelId: string) => {
 export const decrementChannelViewer = async (channelId: string) => {
   try {
     const { data: ch } = await supabase.from('live_channels').select('viewer_count').eq('id', channelId).single() as { data: any };
-    if (ch && ch.viewer_count > 0) {
+    if (ch && (ch as any).viewer_count > 0) {
       await supabase.from('live_channels').update({
-        viewer_count: ch.viewer_count - 1,
+        viewer_count: (ch as any).viewer_count - 1,
         updated_at: new Date().toISOString(),
       }).eq('id', channelId);
     }
