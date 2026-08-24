@@ -129,7 +129,7 @@ export const getActiveAdultGroups = async (requiredPackages?: SubscriptionPackag
 
     if (requiredPackages && requiredPackages.length > 0) {
       groups = groups.filter((group: any) =>
-        group.requiredPackages.some(pkg => requiredPackages.includes(pkg))
+        group.requiredPackages.some((pkg: any) => requiredPackages.includes(pkg))
       );
     }
 
