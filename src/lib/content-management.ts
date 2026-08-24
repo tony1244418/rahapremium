@@ -339,7 +339,7 @@ export const getMovies = async () => {
     if (error) throw error;
 
     const movies = applyMovieOrder(
-      data.map(mapMovie).filter(m => !m.isAdult),
+      (data as any).map(mapMovie).filter((m: any) => !m.isAdult),
       orders
     );
     return { success: true, data: movies };
