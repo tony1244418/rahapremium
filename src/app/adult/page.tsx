@@ -55,7 +55,7 @@ export default function AdultContentPage() {
   }, []);
 
   const getZilizovuja   = () => movies.filter(m => m.adultCategory === 'zilizovuja');
-  const getNgono        = () => movies.filter(m => m.adultCategory === 'ngono' || (m.isAdult && !m.adultCategory));
+  const getNgono        = () => movies.filter(m => m.isAdult === true); // Show ALL adult movies
   const getMoviesZaNgono = () => movies.filter(m => m.adultCategory === 'movies-ngono');
 
   const applyFilters = (content: Movie[]) => {
