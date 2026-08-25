@@ -56,7 +56,7 @@ export default function AdultContentPage() {
 
   const getZilizovuja   = () => movies.filter(m => m.adultCategory === 'zilizovuja');
   const getNgono        = () => movies.filter(m => m.isAdult === true); // Show ALL adult movies
-  const getMoviesZaNgono = () => movies.filter(m => m.adultCategory === 'movies-ngono');
+  const getMoviesZaNgono = () => movies.filter(m => m.isAdult === true); // Show ALL adult movies in Movies tab too
 
   const applyFilters = (content: Movie[]) => {
     let filtered = [...content];
