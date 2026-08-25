@@ -55,8 +55,10 @@ export default function AdultContentPage() {
   }, []);
 
   const getZilizovuja   = () => movies.filter(m => m.adultCategory === 'zilizovuja');
-  const getNgono        = () => movies.filter(m => m.isAdult === true); // Show ALL adult movies
-  const getMoviesZaNgono = () => movies.filter(m => m.isAdult === true); // Show ALL adult movies in Movies tab too
+  // Video Clips: adult content with short duration (< 30 minutes) OR no duration set
+  const getNgono        = () => movies.filter(m => m.isAdult === true && (!m.duration || m.duration < 30));
+  // Movies: adult content with longer duration (>= 30 minutes)
+  const getMoviesZaNgono = () => movies.filter(m => m.isAdult === true && m.duration && m.duration >= 30);
 
   const applyFilters = (content: Movie[]) => {
     let filtered = [...content];
