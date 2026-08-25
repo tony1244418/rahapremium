@@ -53,7 +53,7 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
     { icon: MonitorPlay, label: t('series'), href: '/series' },
     { icon: Gamepad2, label: t('games'), href: '/games' },
     ...(liveTvEnabled ? [{ icon: Radio, label: 'Live TV', href: liveTvUrl, isLiveTV: true, isExternal: true }] : []),
-    ...(shouldShowAdultIcon ? [{ icon: AlertTriangle, label: t('adultContent'), href: '/adult', adultOnly: true, warning: true }] : []),
+    ...(shouldShowAdultIcon ? [{ icon: AlertTriangle, label: t('adultContent'), href: '/adult-movies', adultOnly: true, warning: true }] : []),
     { icon: CreditCard, label: t('subscriptions'), href: '/subscriptions' },
     { icon: Shield, label: t('admin'), href: '/admin', adminOnly: true },
     { icon: Settings, label: t('settings'), href: '/settings' },
