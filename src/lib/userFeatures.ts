@@ -59,7 +59,7 @@ export const watchHistoryService = {
 
       if (error) throw error;
 
-      return (data || []).map(row => ({
+      return ((data as any) || []).map((row: any) => ({
         id: row.id,
         userId: row.user_id,
         movieId: row.movie_id,
