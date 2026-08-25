@@ -95,19 +95,19 @@ export const watchHistoryService = {
       if (error || !data) return null;
 
       return {
-        id: data.id,
-        userId: data.user_id,
-        movieId: data.movie_id,
-        seriesId: data.series_id,
-        episodeId: data.episode_id,
-        contentType: data.content_type,
-        progress: data.progress,
-        duration: data.duration,
-        completed: data.completed,
-        lastPosition: data.last_position,
-        lastWatched: new Date(data.last_watched),
-        seasonNumber: data.season_number,
-        episodeNumber: data.episode_number,
+        id: (data as any).id,
+        userId: (data as any).user_id,
+        movieId: (data as any).movie_id,
+        seriesId: (data as any).series_id,
+        episodeId: (data as any).episode_id,
+        contentType: (data as any).content_type,
+        progress: (data as any).progress,
+        duration: (data as any).duration,
+        completed: (data as any).completed,
+        lastPosition: (data as any).last_position,
+        lastWatched: new Date((data as any).last_watched),
+        seasonNumber: (data as any).season_number,
+        episodeNumber: (data as any).episode_number,
       };
     } catch (error) {
       console.error('Error getting watch history for content:', error);
