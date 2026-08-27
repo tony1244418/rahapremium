@@ -9,15 +9,17 @@ import {
   Play, Lock, Star, Eye, Search, TrendingUp, Video, X, Film,
   MessageCircle, Instagram, Twitter, Facebook, Youtube, Send,
 } from 'lucide-react';
-import { subscribeToAdultMovies } from '@/lib/content-management';
-import { Movie } from '@/types';
+import { subscribeToAdultMovies, subscribeToAdultSeries } from '@/lib/content-management';
+import { Movie, Series } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loading } from '@/components/ui/Loading';
 import { hasPurchasedContent } from '@/lib/subscriptions';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { getControlCenterSettings, ControlCenterSettings } from '@/lib/admin-settings';
+import { MonitorPlay } from 'lucide-react';
 
-type AdultSection = 'ngono' | 'movies-ngono';
+type AdultSection = 'series' | 'movies-ngono' | 'ngono';
 
 export default function AdultContentPage() {
   const { user, refreshUserData } = useAuth();
@@ -26,9 +28,10 @@ export default function AdultContentPage() {
   const { toggles, loading: togglesLoading } = usePlatformControls();
   const [loading, setLoading] = useState(true);
   const [movies, setMovies] = useState<Movie[]>([]);
+  const [series, setSeries] = useState<Series[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [genreFilter, setGenreFilter] = useState('all');
-  const [activeSection, setActiveSection] = useState<AdultSection>('ngono');
+  const [activeSection, setActiveSection] = useState<AdultSection>('series');
   const [socialSettings, setSocialSettings] = useState<ControlCenterSettings | null>(null);
 
   // Redirect to home if the adult section is disabled by admin
@@ -43,24 +46,42 @@ export default function AdultContentPage() {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = subscribeToAdultMovies((data) => {
+    // 1. Instant fetch from high-speed cached server API (sub-50ms)
+    fetch('/api/content?type=adult')
+      .then(r => r.json())
+      .then(res => {
+        if (res && res.success) {
+          if (Array.isArray(res.movies)) setMovies(res.movies);
+          if (Array.isArray(res.series)) setSeries(res.series);
+          setLoading(false);
+        }
+      })
+      .catch(() => {});
+
+    // 2. Realtime listener for live updates
+    const unsubMovies = subscribeToAdultMovies((data) => {
       setMovies(data);
       setLoading(false);
     });
-    const timeout = setTimeout(() => setLoading(false), 5000);
-    // Refresh user on mount to get latest content_accesses after a payment redirect
+    const unsubSeries = subscribeToAdultSeries((data) => {
+      setSeries(data);
+      setLoading(false);
+    });
+    const timeout = setTimeout(() => setLoading(false), 2000);
     refreshUserData();
-    return () => { unsubscribe(); clearTimeout(timeout); };
+    return () => {
+      unsubMovies();
+      unsubSeries();
+      clearTimeout(timeout);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const getZilizovuja   = () => movies.filter(m => m.adultCategory === 'zilizovuja');
-  // Video Clips: adult content with short duration (< 30 minutes) OR no duration set
+  const getSeriesList   = () => series;
   const getNgono        = () => movies.filter(m => m.isAdult === true && (!m.duration || m.duration < 30));
-  // Movies: adult content with longer duration (>= 30 minutes)
   const getMoviesZaNgono = () => movies.filter(m => m.isAdult === true && m.duration && m.duration >= 30);
 
-  const applyFilters = (content: Movie[]) => {
+  const applyFilters = <T extends { title?: string; description?: string; genre?: string[]; searchKeywords?: string[]; director?: string }>(content: T[]): T[] => {
     let filtered = [...content];
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -81,33 +102,26 @@ export default function AdultContentPage() {
   };
 
   const getCurrentContent = () => {
-    if (activeSection === 'ngono')         return applyFilters(getNgono());
+    if (activeSection === 'series')        return applyFilters(getSeriesList());
     if (activeSection === 'movies-ngono')  return applyFilters(getMoviesZaNgono());
+    if (activeSection === 'ngono')         return applyFilters(getNgono());
     return [];
   };
 
   const getAllGenres = (): string[] => {
-    let base: Movie[] = [];
-    if (activeSection === 'ngono')   base = getNgono();
+    let base: any[] = [];
+    if (activeSection === 'series')       base = getSeriesList();
     else if (activeSection === 'movies-ngono') base = getMoviesZaNgono();
+    else if (activeSection === 'ngono')   base = getNgono();
     return Array.from(new Set(base.flatMap(m => m.genre || [])));
   };
 
-  const handleContentClick = (item: Movie) => {
-    const alreadyPurchased = hasPurchasedContent(user, item.id);
-
-    if (!user) {
-      // Not logged in — send to auth, then to pay page
-      router.push(`/auth?redirect=${encodeURIComponent(`/pay?contentId=${item.id}&type=adult`)}`);
-      return;
-    }
-    // Already purchased → watch directly
-    if (alreadyPurchased) {
+  const handleContentClick = (item: Movie | Series) => {
+    if ('totalSeasons' in item || 'total_seasons' in item || 'seasons' in item) {
+      router.push(`/series/${item.id}`);
+    } else {
       router.push(`/adult/watch/${item.id}`);
-      return;
     }
-    // Not purchased → always go to pay page (per-content purchase model)
-    router.push(`/pay?contentId=${item.id}&type=adult`);
   };
 
   if (loading) {
@@ -120,14 +134,14 @@ export default function AdultContentPage() {
     );
   }
 
-  // If the section is disabled, render nothing (redirect is handled in useEffect above)
   if (!togglesLoading && !toggles.adultSectionEnabled) {
     return null;
   }
 
   const tabs = [
-    { key: 'ngono'        as AdultSection, label: 'Video Clips', icon: Video,       count: getNgono().length },
-    { key: 'movies-ngono' as AdultSection, label: 'Movies',      icon: Film,        count: getMoviesZaNgono().length },
+    { key: 'series'       as AdultSection, label: 'Series & Shows', icon: MonitorPlay, count: getSeriesList().length },
+    { key: 'movies-ngono' as AdultSection, label: 'Movies',         icon: Film,        count: getMoviesZaNgono().length },
+    { key: 'ngono'        as AdultSection, label: 'Video Clips',    icon: Video,       count: getNgono().length },
   ];
 
   const currentContent = getCurrentContent();
@@ -198,20 +212,20 @@ export default function AdultContentPage() {
         )}
 
 
-        <div className="grid grid-cols-2 gap-2 bg-dark-900/80 p-1.5 rounded-2xl border border-dark-700/50">
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-2 bg-dark-900/80 p-1.5 rounded-2xl border border-dark-700/50">
           {tabs.map(({ key, label, icon: Icon, count }) => (
             <button
               key={key}
               onClick={() => { setActiveSection(key); setSearchQuery(''); setGenreFilter('all'); }}
-              className={`relative flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-xl transition-all duration-250 ${
+              className={`relative flex flex-col items-center justify-center gap-1 py-2.5 sm:py-3 px-1.5 sm:px-2 rounded-xl transition-all duration-250 ${
                 activeSection === key
                   ? 'bg-blue-700 text-white shadow-lg shadow-blue-700/30'
                   : 'text-gray-500 hover:text-gray-300'
               }`}
             >
               <Icon size={17} />
-              <span className="font-bold text-xs text-center leading-tight">{label}</span>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+              <span className="font-bold text-[11px] sm:text-xs text-center leading-tight">{label}</span>
+              <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-semibold ${
                 activeSection === key ? 'bg-black/25 text-white' : 'bg-dark-700 text-gray-500'
               }`}>{count}</span>
             </button>
@@ -223,7 +237,7 @@ export default function AdultContentPage() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={17} />
           <input
             type="text"
-            placeholder={`Search ${activeSection === 'ngono' ? 'Video Clips' : 'Movies'}...`}
+            placeholder={`Search ${activeSection === 'series' ? 'Series' : activeSection === 'movies-ngono' ? 'Movies' : 'Video Clips'}...`}
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-10 py-3 bg-dark-800/80 backdrop-blur-sm border border-dark-700/60 rounded-2xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all text-sm"
@@ -266,6 +280,8 @@ export default function AdultContentPage() {
               className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4"
             >
               {currentContent.map((item, index) => {
+                const isSeries = 'totalSeasons' in item || 'total_seasons' in item || 'seasons' in item;
+                const targetHref = isSeries ? `/series/${item.id}` : `/adult/watch/${item.id}`;
                 const hasPurchased = hasPurchasedContent(user, item.id);
                 // Adult content: always locked unless purchased
                 const hasAccess = hasPurchased;
@@ -278,85 +294,85 @@ export default function AdultContentPage() {
                     initial={{ opacity: 0, scale: 0.93 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.28, delay: index * 0.03 }}
-                    className="group cursor-pointer"
-                    onClick={() => handleContentClick(item)}
                   >
-                    {/* Thumbnail */}
-                    <div className="relative overflow-hidden rounded-2xl bg-dark-800 aspect-[3/4] mb-2.5 shadow-md group-hover:shadow-xl group-hover:shadow-blue-900/30 transition-all duration-300 transform group-hover:scale-[1.03] group-hover:-translate-y-1">
-                      {item.thumbnailUrl ? (
-                        <img
-                          src={item.thumbnailUrl}
-                          alt={title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-800/40 to-slate-900">
-                          <Play size={28} className="text-blue-400" />
+                    <Link href={targetHref} className="group block focus:outline-none cursor-pointer">
+                      {/* Thumbnail */}
+                      <div className="relative overflow-hidden rounded-2xl bg-dark-800 aspect-[3/4] mb-2.5 shadow-md group-hover:shadow-xl group-hover:shadow-blue-900/30 transition-all duration-300 transform group-hover:scale-[1.03] group-hover:-translate-y-1">
+                        {item.thumbnailUrl ? (
+                          <img
+                            src={item.thumbnailUrl}
+                            alt={title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-800/40 to-slate-900">
+                            <Play size={28} className="text-blue-400" />
+                          </div>
+                        )}
+
+                        {/* Always-on dark gradient from bottom for readability */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+                        {/* 18+ badge */}
+                        <div className="absolute top-2 left-2 bg-blue-700/90 backdrop-blur-sm text-white text-xs px-1.5 py-0.5 rounded font-black shadow-md">
+                          18+
                         </div>
-                      )}
 
-                      {/* Always-on dark gradient from bottom for readability */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                        {/* Lock badge at bottom — visible over the image */}
+                        {locked && (
+                          <div className="absolute bottom-0 left-0 right-0 px-3 py-3 flex flex-col items-center gap-1">
+                            <div className="w-8 h-8 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30 shadow-lg">
+                              <Lock size={14} className="text-white" />
+                            </div>
+                            {item.contentPrice && item.contentPrice > 0 && (
+                              <span className="text-xs text-amber-400 font-black drop-shadow-lg">
+                                TZS {item.contentPrice.toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+                        )}
 
-                      {/* 18+ badge */}
-                      <div className="absolute top-2 left-2 bg-blue-700/90 backdrop-blur-sm text-white text-xs px-1.5 py-0.5 rounded font-black shadow-md">
-                        18+
+                        {/* Play button on hover — only for purchased content */}
+                        {hasAccess && (
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+                            <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center shadow-xl shadow-blue-600/50 ring-2 ring-white/15 transform scale-75 group-hover:scale-100 transition-transform duration-300">
+                              <Play size={20} className="text-white fill-white ml-0.5" />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Duration badge — only for purchased */}
+                        {hasAccess && (item.duration ?? 0) > 0 && (
+                          <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-white text-xs px-1.5 py-0.5 rounded">
+                            {Math.floor((item.duration ?? 0) / 60)}h {(item.duration ?? 0) % 60}m
+                          </div>
+                        )}
                       </div>
 
-                      {/* Lock badge at bottom — visible over the image */}
-                      {locked && (
-                        <div className="absolute bottom-0 left-0 right-0 px-3 py-3 flex flex-col items-center gap-1">
-                          <div className="w-8 h-8 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30 shadow-lg">
-                            <Lock size={14} className="text-white" />
-                          </div>
-                          {item.contentPrice && item.contentPrice > 0 && (
-                            <span className="text-xs text-amber-400 font-black drop-shadow-lg">
-                              TZS {item.contentPrice.toLocaleString()}
-                            </span>
+                      {/* Info */}
+                      <div>
+                        <h3 className="font-bold text-sm text-white line-clamp-2 mb-1 group-hover:text-blue-400 transition-colors">
+                          {title}
+                        </h3>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          {item.rating != null && (
+                            <>
+                              <Star size={11} className="text-blue-400 fill-blue-400" />
+                              <span>{item.rating}/5</span>
+                            </>
+                          )}
+                          {item.views != null && (
+                            <>
+                              <Eye size={11} className="ml-0.5" />
+                              <span>{(item.views as number).toLocaleString()}</span>
+                            </>
                           )}
                         </div>
-                      )}
-
-                      {/* Play button on hover — only for purchased content */}
-                      {hasAccess && (
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                          <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center shadow-xl shadow-blue-600/50 ring-2 ring-white/15 transform scale-75 group-hover:scale-100 transition-transform duration-300">
-                            <Play size={20} className="text-white fill-white ml-0.5" />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Duration badge — only for purchased */}
-                      {hasAccess && (item.duration ?? 0) > 0 && (
-                        <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-white text-xs px-1.5 py-0.5 rounded">
-                          {Math.floor((item.duration ?? 0) / 60)}h {(item.duration ?? 0) % 60}m
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div>
-                      <h3 className="font-bold text-sm text-white line-clamp-2 mb-1 group-hover:text-blue-400 transition-colors">
-                        {title}
-                      </h3>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        {item.rating != null && (
-                          <>
-                            <Star size={11} className="text-blue-400 fill-blue-400" />
-                            <span>{item.rating}/5</span>
-                          </>
-                        )}
-                        {item.views != null && (
-                          <>
-                            <Eye size={11} className="ml-0.5" />
-                            <span>{(item.views as number).toLocaleString()}</span>
-                          </>
+                        {locked && (
+                          <p className="mt-1 text-xs text-amber-400 font-semibold">Bonyeza Kutazama</p>
                         )}
                       </div>
-                      {locked && (
-                        <p className="mt-1 text-xs text-amber-400 font-semibold">Bonyeza Kulipa</p>
-                      )}
-                    </div>
+                    </Link>
                   </motion.div>
                 );
               })}
