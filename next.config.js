@@ -8,12 +8,12 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
 
+  staticPageGenerationTimeout: 60,
+
   // Enable experimental features for better performance and single-process build
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion'],
     cpus: 1,
-    workerThreads: false,
-    staticGenerationMaxConcurrency: 1,
   },
 
   // Allow Cloudflare tunnel and local network access for dev testing on phone
