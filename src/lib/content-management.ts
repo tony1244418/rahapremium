@@ -391,9 +391,9 @@ export const subscribeToMovies = (callback: (movies: Movie[]) => void) => {
 
 export const subscribeToAdultMovies = (callback: (movies: Movie[]) => void) => {
   const fetchAndCallback = async () => {
-    const { data, error } = await supabase.from('movies').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('movies').select('*').eq('is_adult', true);
     if (!error && data) {
-      const movies = (data as any).map(mapMovie).filter((m: any) => m.isAdult && m.isActive);
+      const movies = (data as any).map(mapMovie).filter((m: any) => m.isActive);
       callback(movies);
     }
   };
