@@ -51,9 +51,55 @@ const fetchMovieSortOrders = async (): Promise<Record<string, number>> => {
   }
 };
 
+export const mapMovieData = (movie: any): Movie => ({
+  ...movie,
+  id: movie.id,
+  title: movie.title || '',
+  description: movie.description || '',
+  videoUrl: movie.video_url || movie.videoLink || '',
+  downloadUrl: movie.download_url || movie.downloadUrl || '',
+  googleDriveUrl: movie.google_drive_url || movie.googleDriveUrl || '',
+  thumbnailUrl: movie.thumbnail_url || movie.thumbnailUrl || '',
+  duration: movie.duration,
+  releaseDate: toDate(movie.release_date || movie.releaseDate || movie.releaseYear),
+  genre: movie.genre || [],
+  language: movie.language || 'sw',
+  quality: movie.quality ? (Array.isArray(movie.quality) ? movie.quality : [movie.quality]) : [],
+  requiredPackages: movie.required_packages || movie.requiredPackages || [],
+  createdAt: toDate(movie.created_at || movie.createdAt),
+  updatedAt: toDate(movie.updated_at || movie.updatedAt),
+  views: movie.views || 0,
+  isActive: movie.is_active ?? movie.isActive ?? true,
+  isAdult: movie.is_adult ?? movie.isAdult ?? false,
+  adultCategory: movie.adult_category || movie.adultCategory || null,
+  rating: movie.rating || 0,
+  cast: movie.cast_list || movie.cast || [],
+  director: movie.director || '',
+  searchKeywords: movie.search_keywords || movie.searchKeywords || [],
+  contentPurchaseEnabled: movie.content_purchase_enabled ?? movie.contentPurchaseEnabled ?? false,
+  contentPrice: movie.content_price ?? movie.contentPrice ?? 0,
+  contentPriceDays: movie.content_price_days ?? movie.contentPriceDays ?? 30,
+  contentPurchasePackages: movie.content_purchase_packages || movie.contentPurchasePackages || [],
+  videoEmbedCode: movie.video_embed_code || movie.videoEmbedCode || '',
+});
+
 // Movies
 export const getMovies = async (isAdult: boolean = false, requiredPackages?: SubscriptionPackage[]): Promise<Movie[]> => {
   try {
+    if (typeof window !== 'undefined') {
+      try {
+        const res = await fetch(`/api/content?type=${isAdult ? 'adult' : 'movies'}`);
+        const json = await res.json();
+        if (json && json.success) {
+          const raw = isAdult ? json.movies : json.data;
+          if (Array.isArray(raw)) {
+            const mapped = raw.map(mapMovieData);
+            return mapped;
+          }
+        }
+      } catch (e) {}
+    }
+
     const [{ data, error }, orders] = await Promise.all([
       supabase
         .from('movies')
@@ -66,38 +112,7 @@ export const getMovies = async (isAdult: boolean = false, requiredPackages?: Sub
 
     if (error) throw error;
 
-    const mapped = ((data as any) || []).map((movie: any) => ({
-      ...movie,
-      id: movie.id,
-      title: movie.title || '',
-      description: movie.description || '',
-      videoUrl: movie.video_url || movie.videoLink || '',
-      downloadUrl: movie.download_url || movie.downloadUrl || '',
-      googleDriveUrl: movie.google_drive_url || movie.googleDriveUrl || '',
-      thumbnailUrl: movie.thumbnail_url || movie.thumbnailUrl || '',
-      duration: movie.duration,
-      releaseDate: toDate(movie.release_date || movie.releaseDate || movie.releaseYear),
-      genre: movie.genre || [],
-      language: movie.language || 'sw',
-      quality: movie.quality ? (Array.isArray(movie.quality) ? movie.quality : [movie.quality]) : [],
-      requiredPackages: movie.required_packages || movie.requiredPackages || [],
-      createdAt: toDate(movie.created_at || movie.createdAt),
-      updatedAt: toDate(movie.updated_at || movie.updatedAt),
-      views: movie.views || 0,
-      isActive: movie.is_active ?? movie.isActive ?? true,
-      isAdult: movie.is_adult ?? movie.isAdult ?? false,
-      adultCategory: movie.adult_category || movie.adultCategory || null,
-      rating: movie.rating || 0,
-      cast: movie.cast_list || movie.cast || [],
-      director: movie.director || '',
-      searchKeywords: movie.search_keywords || movie.searchKeywords || [],
-      contentPurchaseEnabled: movie.content_purchase_enabled ?? movie.contentPurchaseEnabled ?? false,
-      contentPrice: movie.content_price ?? movie.contentPrice ?? 0,
-      contentPriceDays: movie.content_price_days ?? movie.contentPriceDays ?? 30,
-      contentPurchasePackages: movie.content_purchase_packages || movie.contentPurchasePackages || [],
-      videoEmbedCode: movie.video_embed_code || movie.videoEmbedCode || '',
-    })) as Movie[];
-
+    const mapped = ((data as any) || []).map(mapMovieData) as Movie[];
     return applyMovieOrder(mapped, orders);
   } catch (error) {
     console.error('Error fetching movies:', error);
@@ -107,6 +122,16 @@ export const getMovies = async (isAdult: boolean = false, requiredPackages?: Sub
 
 export const getMovieById = async (id: string): Promise<Movie | null> => {
   try {
+    if (typeof window !== 'undefined') {
+      try {
+        const res = await fetch(`/api/content?type=movie&id=${encodeURIComponent(id)}`);
+        const json = await res.json();
+        if (json && json.success && json.data) {
+          return mapMovieData(json.data);
+        }
+      } catch (e) {}
+    }
+
     const { data: movie, error } = await supabase
       .from('movies')
       .select('*')
@@ -114,38 +139,7 @@ export const getMovieById = async (id: string): Promise<Movie | null> => {
       .single();
 
     if (error || !movie) return null;
-
-    return {
-      ...(movie as any),
-      id: (movie as any).id,
-      title: (movie as any).title || '',
-      description: (movie as any).description || '',
-      videoUrl: (movie as any).video_url || (movie as any).videoLink || '',
-      downloadUrl: (movie as any).download_url || (movie as any).downloadUrl || '',
-      googleDriveUrl: (movie as any).google_drive_url || (movie as any).googleDriveUrl || '',
-      thumbnailUrl: (movie as any).thumbnail_url || (movie as any).thumbnailUrl || '',
-      duration: (movie as any).duration,
-      releaseDate: toDate((movie as any).release_date || (movie as any).releaseDate || (movie as any).releaseYear),
-      genre: (movie as any).genre || [],
-      language: (movie as any).language || 'sw',
-      quality: (movie as any).quality ? (Array.isArray((movie as any).quality) ? (movie as any).quality : [(movie as any).quality]) : [],
-      requiredPackages: (movie as any).required_packages || (movie as any).requiredPackages || [],
-      createdAt: toDate((movie as any).created_at || (movie as any).createdAt),
-      updatedAt: toDate((movie as any).updated_at || (movie as any).updatedAt),
-      views: (movie as any).views || 0,
-      isActive: (movie as any).is_active ?? (movie as any).isActive ?? true,
-      isAdult: (movie as any).is_adult ?? (movie as any).isAdult ?? false,
-      adultCategory: (movie as any).adult_category || (movie as any).adultCategory || null,
-      rating: (movie as any).rating || 0,
-      cast: (movie as any).cast_list || (movie as any).cast || [],
-      director: (movie as any).director || '',
-      searchKeywords: (movie as any).search_keywords || (movie as any).searchKeywords || [],
-      contentPurchaseEnabled: (movie as any).content_purchase_enabled ?? (movie as any).contentPurchaseEnabled ?? false,
-      contentPrice: (movie as any).content_price ?? (movie as any).contentPrice ?? 0,
-      contentPriceDays: (movie as any).content_price_days ?? (movie as any).contentPriceDays ?? 30,
-      contentPurchasePackages: (movie as any).content_purchase_packages || (movie as any).contentPurchasePackages || [],
-      videoEmbedCode: (movie as any).video_embed_code || (movie as any).videoEmbedCode || '',
-    } as Movie;
+    return mapMovieData(movie);
   } catch (error) {
     console.error('Error fetching movie:', error);
     return null;
