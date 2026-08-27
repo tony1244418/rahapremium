@@ -12,7 +12,7 @@ import { AuthLoading } from '@/components/AuthLoading';
 import MaintenanceGate from '@/components/MaintenanceGate';
 import DevToolsGuard from '@/components/DevToolsGuard';
 
-const inter = Inter({ subsets: ['latin'] });
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'RahaPremium - Premium Entertainment Streaming',
