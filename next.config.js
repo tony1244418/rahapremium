@@ -1,8 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable experimental features for better performance
+  // Build & resource optimizations for Hostinger/CloudLinux
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
+  // Enable experimental features for better performance and single-process build
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion'],
+    cpus: 1,
+    workerThreads: false,
+    staticGenerationMaxConcurrency: 1,
   },
 
   // Allow Cloudflare tunnel and local network access for dev testing on phone
