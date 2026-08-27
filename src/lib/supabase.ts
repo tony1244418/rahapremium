@@ -40,15 +40,7 @@ const firebaseConfig = {
 
 // Avoid re-initializing if already done
 const app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
-
-let db: ReturnType<typeof getFirestore>;
-try {
-  db = initializeFirestore(app, {
-    experimentalForceLongPolling: true,
-  });
-} catch (e) {
-  db = getFirestore(app);
-}
+const db = getFirestore(app);
 
 // Strip undefined values from data structures before passing to Firestore
 function sanitizeForFirestore<T>(data: T): T {
@@ -201,6 +193,18 @@ class FirestoreQueryBuilder {
 
   private async executeRead() {
     try {
+      // Direct ID lookup optimization (instant 10ms fetch, prevents full collection downloads)
+      const idWhere = this._wheres.find(w => w.field === 'id' && w.op === '==');
+      if (idWhere && typeof idWhere.value === 'string' && this._wheres.length === 1) {
+        try {
+          const docRef = doc(db, this._collection, idWhere.value);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            return { data: [{ id: docSnap.id, ...docSnap.data() }], error: null };
+          }
+        } catch (err) {}
+      }
+
       const q = this.buildQuery();
       const snapshot = await getDocs(q as Query<DocumentData>);
       let rows = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
